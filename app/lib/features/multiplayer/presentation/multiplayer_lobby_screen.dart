@@ -3,20 +3,47 @@ import 'package:bara_alsalfa/core/widgets/bara_button.dart';
 import 'package:bara_alsalfa/core/widgets/bara_scaffold.dart';
 import 'package:bara_alsalfa/core/widgets/glow_card.dart';
 import 'package:bara_alsalfa/core/widgets/player_avatar.dart';
+import 'package:bara_alsalfa/domain/models/multiplayer_room.dart';
 import 'package:bara_alsalfa/features/multiplayer/application/multiplayer_room_controller.dart';
+import 'package:bara_alsalfa/features/multiplayer/presentation/multiplayer_chat_card.dart';
 import 'package:bara_alsalfa/features/multiplayer/presentation/multiplayer_hub_screen.dart';
 import 'package:bara_alsalfa/features/multiplayer/presentation/multiplayer_room_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-class MultiplayerLobbyScreen extends ConsumerWidget {
+class MultiplayerLobbyScreen extends ConsumerStatefulWidget {
   const MultiplayerLobbyScreen({super.key});
 
   static const routePath = '/multiplayer/lobby';
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MultiplayerLobbyScreen> createState() => _MultiplayerLobbyScreenState();
+}
+
+class _MultiplayerLobbyScreenState extends ConsumerState<MultiplayerLobbyScreen> {
+  final TextEditingController _chatController = TextEditingController();
+
+  @override
+  void dispose() {
+    _chatController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    ref.listen(multiplayerRoomProvider, (previous, next) {
+      final nextRoom = next.asData?.value;
+      if (!mounted || nextRoom == null) {
+        return;
+      }
+      final phaseStarted = nextRoom.status == MultiplayerRoomStatus.inProgress &&
+          nextRoom.round.phase != MultiplayerRoomPhase.lobby;
+      if (phaseStarted && GoRouterState.of(context).uri.toString() != MultiplayerRoomScreen.routePath) {
+        context.go(MultiplayerRoomScreen.routePath);
+      }
+    });
+
     final roomAsync = ref.watch(multiplayerRoomProvider);
     final room = roomAsync.asData?.value;
 
@@ -42,6 +69,12 @@ class MultiplayerLobbyScreen extends ConsumerWidget {
         'غادر الغرفة',
         'جاري إعداد الردهة',
         'Host',
+        'عدد برا السالفة',
+        'الحد الأدنى لهذا الوضع',
+        'احظر اللاعب',
+        'هل تريد حظر هذا اللاعب من الغرفة؟',
+        'إلغاء',
+        'تأكيد الحظر',
         if (room != null) room.systemMessage,
       ],
     );
@@ -66,6 +99,7 @@ class MultiplayerLobbyScreen extends ConsumerWidget {
         }
 
         final currentPlayer = room.currentPlayer;
+        final minimumPlayers = multiplayerMinimumPlayersForMode(room.modeSlug);
 
         return BaraScaffold(
           title: localizeUiPhrase(ref, 'ردهة الغرفة'),
@@ -86,6 +120,23 @@ class MultiplayerLobbyScreen extends ConsumerWidget {
                     Text(localizeUiPhrase(ref, room.systemMessage)),
                     const SizedBox(height: 8),
                     Text('${localizeUiPhrase(ref, 'رابط الدعوة')}: ${room.shareLink}'),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
+                      children: [
+                        Chip(
+                          label: Text(
+                            '${localizeUiPhrase(ref, 'عدد برا السالفة')}: ${room.outsiderCount}',
+                          ),
+                        ),
+                        Chip(
+                          label: Text(
+                            '${localizeUiPhrase(ref, 'الحد الأدنى لهذا الوضع')}: $minimumPlayers',
+                          ),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),
@@ -94,8 +145,10 @@ class MultiplayerLobbyScreen extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(localizeUiPhrase(ref, 'اللاعبون'),
-                        style: Theme.of(context).textTheme.titleLarge),
+                    Text(
+                      localizeUiPhrase(ref, 'اللاعبون'),
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
                     const SizedBox(height: 14),
                     ...room.players.map(
                       (player) => Padding(
@@ -121,6 +174,12 @@ class MultiplayerLobbyScreen extends ConsumerWidget {
                                     : localizeUiPhrase(ref, 'بانتظار'),
                               ),
                             ),
+                            if (room.isCurrentPlayerHost && player.id != room.currentPlayerId)
+                              IconButton(
+                                onPressed: () => _confirmBan(player),
+                                icon: const Icon(Icons.block_rounded),
+                                tooltip: localizeUiPhrase(ref, 'احظر اللاعب'),
+                              ),
                           ],
                         ),
                       ),
@@ -143,6 +202,12 @@ class MultiplayerLobbyScreen extends ConsumerWidget {
                   ],
                 ),
               ),
+              const SizedBox(height: 16),
+              MultiplayerChatCard(
+                messages: room.chatMessages,
+                controller: _chatController,
+                onSend: _sendChat,
+              ),
               const SizedBox(height: 22),
               BaraButton.secondary(
                 label: currentPlayer?.isReady == true
@@ -156,7 +221,7 @@ class MultiplayerLobbyScreen extends ConsumerWidget {
                 BaraButton.secondary(
                   label: localizeUiPhrase(ref, 'ملء الغرفة بلاعبين تجريبيين'),
                   icon: Icons.group_add_rounded,
-                  onPressed: room.players.length >= 4
+                  onPressed: room.players.length >= room.maxPlayers
                       ? null
                       : () => ref.read(multiplayerRoomProvider.notifier).seedDemoPlayers(),
                 ),
@@ -165,13 +230,7 @@ class MultiplayerLobbyScreen extends ConsumerWidget {
                   label: localizeUiPhrase(ref, 'ابدأ الجولة الحية'),
                   icon: Icons.play_arrow_rounded,
                   onPressed: room.canStart
-                      ? () async {
-                          await ref.read(multiplayerRoomProvider.notifier).startGame();
-                          if (!context.mounted) {
-                            return;
-                          }
-                          context.go(MultiplayerRoomScreen.routePath);
-                        }
+                      ? () => ref.read(multiplayerRoomProvider.notifier).startGame()
                       : null,
                 ),
               ],
@@ -198,11 +257,63 @@ class MultiplayerLobbyScreen extends ConsumerWidget {
         child: Center(
           child: Padding(
             padding: const EdgeInsets.all(24),
-            child: Text(localizeUiPhrase(ref, '$error')),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(localizeUiPhrase(ref, '$error'), textAlign: TextAlign.center),
+                const SizedBox(height: 16),
+                BaraButton.primary(
+                  label: localizeUiPhrase(ref, 'العودة للغرف الأونلاين'),
+                  icon: Icons.home_rounded,
+                  onPressed: () => context.go(MultiplayerHubScreen.routePath),
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
+  }
+
+  Future<void> _confirmBan(MultiplayerPlayer player) async {
+    final shouldBan = await showDialog<bool>(
+          context: context,
+          builder: (context) {
+            return AlertDialog(
+              title: Text(localizeUiPhrase(ref, 'احظر اللاعب')),
+              content: Text(
+                '${localizeUiPhrase(ref, 'هل تريد حظر هذا اللاعب من الغرفة؟')}\n${player.name}',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: Text(localizeUiPhrase(ref, 'إلغاء')),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.of(context).pop(true),
+                  child: Text(localizeUiPhrase(ref, 'تأكيد الحظر')),
+                ),
+              ],
+            );
+          },
+        ) ??
+        false;
+    if (!shouldBan) {
+      return;
+    }
+    await ref.read(multiplayerRoomProvider.notifier).banPlayer(player.id);
+  }
+
+  Future<void> _sendChat() async {
+    final text = _chatController.text.trim();
+    if (text.isEmpty) {
+      return;
+    }
+    await ref.read(multiplayerRoomProvider.notifier).sendChatMessage(text);
+    if (!mounted) {
+      return;
+    }
+    _chatController.clear();
   }
 }
 

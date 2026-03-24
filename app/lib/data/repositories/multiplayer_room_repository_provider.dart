@@ -7,8 +7,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 final multiplayerRoomRepositoryProvider = Provider<MultiplayerRoomRepository>((ref) {
   final config = ref.watch(multiplayerClientConfigProvider);
   final repository = config.useLiveServer
-      ? SocketMultiplayerRoomRepository(serverUrl: config.serverUrl)
-      : FakeMultiplayerRoomRepository();
+      ? SocketMultiplayerRoomRepository(
+          serverUrl: config.serverUrl,
+          clientId: config.clientId,
+        )
+      : FakeMultiplayerRoomRepository(clientId: config.clientId);
 
   ref.onDispose(() {
     if (repository is SocketMultiplayerRoomRepository) {

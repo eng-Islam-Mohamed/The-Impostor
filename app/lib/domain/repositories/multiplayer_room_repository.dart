@@ -14,6 +14,7 @@ abstract class MultiplayerRoomRepository {
     required List<String> topicPool,
     required MultiplayerRoomVisibility visibility,
     required int maxPlayers,
+    required int outsiderCount,
   });
 
   Future<MultiplayerRoomState> joinRoom({
@@ -43,7 +44,7 @@ abstract class MultiplayerRoomRepository {
   Future<void> submitVote({
     required String roomId,
     required String playerId,
-    required String suspectId,
+    required List<String> suspectIds,
   });
 
   Future<void> submitOutsiderGuess({
@@ -55,5 +56,17 @@ abstract class MultiplayerRoomRepository {
   Future<void> leaveRoom({
     required String roomId,
     required String playerId,
+  });
+
+  Future<void> banPlayer({
+    required String roomId,
+    required String hostPlayerId,
+    required String targetPlayerId,
+  });
+
+  Future<void> sendChatMessage({
+    required String roomId,
+    required String playerId,
+    required String text,
   });
 }

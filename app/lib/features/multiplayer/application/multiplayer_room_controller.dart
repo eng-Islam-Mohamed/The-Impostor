@@ -27,6 +27,7 @@ class MultiplayerRoomController extends AsyncNotifier<MultiplayerRoomState?> {
     required List<String> topicPool,
     required MultiplayerRoomVisibility visibility,
     required int maxPlayers,
+    required int outsiderCount,
   }) async {
     state = const AsyncLoading();
     try {
@@ -38,6 +39,7 @@ class MultiplayerRoomController extends AsyncNotifier<MultiplayerRoomState?> {
             topicPool: topicPool,
             visibility: visibility,
             maxPlayers: maxPlayers,
+            outsiderCount: outsiderCount,
           );
       _bind(room);
     } catch (error, stackTrace) {
@@ -105,16 +107,16 @@ class MultiplayerRoomController extends AsyncNotifier<MultiplayerRoomState?> {
         .advancePrototypePhase(roomId: room.roomId);
   }
 
-  Future<void> submitVote(String suspectId) async {
+  Future<void> submitVote(List<String> suspectIds) async {
     final room = state.asData?.value;
     final player = room?.currentPlayer;
-    if (room == null || player == null) {
+    if (room == null || player == null || suspectIds.isEmpty) {
       return;
     }
     await ref.read(multiplayerRoomRepositoryProvider).submitVote(
           roomId: room.roomId,
           playerId: player.id,
-          suspectId: suspectId,
+          suspectIds: suspectIds,
         );
   }
 
@@ -147,6 +149,33 @@ class MultiplayerRoomController extends AsyncNotifier<MultiplayerRoomState?> {
     state = const AsyncData(null);
   }
 
+  Future<void> banPlayer(String targetPlayerId) async {
+    final room = state.asData?.value;
+    final player = room?.currentPlayer;
+    if (room == null || player == null) {
+      return;
+    }
+    await ref.read(multiplayerRoomRepositoryProvider).banPlayer(
+          roomId: room.roomId,
+          hostPlayerId: player.id,
+          targetPlayerId: targetPlayerId,
+        );
+  }
+
+  Future<void> sendChatMessage(String text) async {
+    final room = state.asData?.value;
+    final player = room?.currentPlayer;
+    final trimmed = text.trim();
+    if (room == null || player == null || trimmed.isEmpty) {
+      return;
+    }
+    await ref.read(multiplayerRoomRepositoryProvider).sendChatMessage(
+          roomId: room.roomId,
+          playerId: player.id,
+          text: trimmed,
+        );
+  }
+
   void clearError() {
     if (state.hasError) {
       state = const AsyncData(null);
@@ -159,9 +188,14 @@ class MultiplayerRoomController extends AsyncNotifier<MultiplayerRoomState?> {
     _subscription = ref
         .read(multiplayerRoomRepositoryProvider)
         .watchRoom(roomId: room.roomId, currentPlayerId: room.currentPlayerId)
-        .listen((nextRoom) {
-      state = AsyncData(nextRoom);
-    });
+        .listen(
+      (nextRoom) {
+        state = AsyncData(nextRoom);
+      },
+      onError: (Object error, StackTrace stackTrace) {
+        state = AsyncError(error, stackTrace);
+      },
+    );
   }
 }
 

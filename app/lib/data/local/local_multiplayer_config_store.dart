@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 
 import 'package:bara_alsalfa/domain/models/multiplayer_client_config.dart';
 
@@ -9,7 +10,7 @@ abstract class MultiplayerConfigStore {
 }
 
 class LocalMultiplayerConfigStore implements MultiplayerConfigStore {
-  static const int _configVersion = 3;
+  static const int _configVersion = 4;
   static const String _defaultServerUrl = String.fromEnvironment(
     'MULTIPLAYER_SERVER_URL',
     defaultValue: 'http://192.168.1.40:8080',
@@ -28,17 +29,18 @@ class LocalMultiplayerConfigStore implements MultiplayerConfigStore {
   Future<MultiplayerClientConfig> load() async {
     try {
       if (!await _file.exists()) {
-        return const MultiplayerClientConfig.defaults();
+        return MultiplayerClientConfig.defaults().copyWith(clientId: _generateClientId());
       }
 
       final content = await _file.readAsString();
       if (content.trim().isEmpty) {
-        return const MultiplayerClientConfig.defaults();
+        return MultiplayerClientConfig.defaults().copyWith(clientId: _generateClientId());
       }
 
       final json = jsonDecode(content) as Map<String, dynamic>;
       final storedVersion = json['configVersion'] as int? ?? 0;
       final storedUrl = (json['serverUrl'] as String?)?.trim() ?? _defaultServerUrl;
+      final storedClientId = (json['clientId'] as String?)?.trim();
       return MultiplayerClientConfig(
         useLiveServer: storedVersion < _configVersion
             ? true
@@ -46,9 +48,12 @@ class LocalMultiplayerConfigStore implements MultiplayerConfigStore {
         serverUrl: storedVersion < _configVersion
             ? _defaultServerUrl
             : (storedUrl.isEmpty ? _defaultServerUrl : storedUrl),
+        clientId: storedClientId == null || storedClientId.isEmpty
+            ? _generateClientId()
+            : storedClientId,
       );
     } catch (_) {
-      return const MultiplayerClientConfig.defaults();
+      return MultiplayerClientConfig.defaults().copyWith(clientId: _generateClientId());
     }
   }
 
@@ -60,7 +65,17 @@ class LocalMultiplayerConfigStore implements MultiplayerConfigStore {
         'configVersion': _configVersion,
         'useLiveServer': config.useLiveServer,
         'serverUrl': config.serverUrl,
+        'clientId': config.clientId,
       }),
     );
+  }
+
+  String _generateClientId() {
+    final random = Random.secure();
+    final suffix = List.generate(
+      12,
+      (_) => random.nextInt(36).toRadixString(36),
+    ).join();
+    return 'client-$suffix';
   }
 }

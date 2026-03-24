@@ -22,6 +22,7 @@ Future<void> main() async {
   final initialTopicTranslations = await topicTranslationsStore.load();
   final multiplayerConfigStore = LocalMultiplayerConfigStore();
   final initialMultiplayerConfig = await multiplayerConfigStore.load();
+  await multiplayerConfigStore.save(initialMultiplayerConfig);
 
   runApp(
     ProviderScope(

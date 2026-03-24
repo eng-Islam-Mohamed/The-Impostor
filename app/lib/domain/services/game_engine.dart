@@ -54,44 +54,46 @@ class GameEngine {
     required List<PlayerProfile> players,
     required List<String> outsiderIds,
     required String topic,
-    required Map<String, String> votes,
+    required Map<String, List<String>> votes,
     required List<String> topicPool,
   }) {
     final outsiderSet = outsiderIds.toSet();
     final counts = <String, int>{};
-    for (final suspectId in votes.values) {
-      counts.update(suspectId, (value) => value + 1, ifAbsent: () => 1);
+    for (final suspectIds in votes.values) {
+      for (final suspectId in suspectIds) {
+        counts.update(suspectId, (value) => value + 1, ifAbsent: () => 1);
+      }
     }
 
-    final maxVotes = counts.values.fold<int>(0, max);
-    final leaders = counts.entries
-        .where((entry) => entry.value == maxVotes)
-        .map((entry) => entry.key)
+    final accusedPlayerIds = _buildAccusedPlayerIds(
+      counts: counts,
+      limit: outsiderIds.length,
+    );
+    final isTie = accusedPlayerIds.length > outsiderIds.length;
+    final survivingOutsiderIds = outsiderIds
+        .where((outsiderId) => !accusedPlayerIds.contains(outsiderId))
         .toList(growable: false);
-    final isTie = leaders.length > 1;
-    final mostVotedPlayerId = leaders.isEmpty ? null : leaders.first;
-    final outsiderCaught = !isTie && outsiderSet.contains(mostVotedPlayerId);
+    final outsiderCaught = survivingOutsiderIds.length != outsiderIds.length;
 
     final voteScoreDeltas = <String, int>{
       for (final player in players)
         player.id: outsiderSet.contains(player.id)
             ? 0
-            : outsiderSet.contains(votes[player.id])
-                ? 1
-                : -1,
+            : _voteDelta(votes[player.id] ?? const [], outsiderSet),
     };
 
-    final recapLine = switch ((outsiderCaught, isTie, outsiderIds.length > 1)) {
-      (true, _, true) => 'تم كشف واحد من برا السالفة، لكن البقية ما زالوا يراوغون.',
-      (true, _, false) => 'انكشف برا السالفة بعد تصويت دقيق في آخر لحظة.',
-      (false, true, _) => 'التعادل خلط الأوراق ومنح برا السالفة فرصة أخيرة للنجاة.',
-      _ => 'المجموعة شكّت في الشخص الخطأ وبرا السالفة ما زال في المشهد.',
+    final recapLine = switch ((survivingOutsiderIds.isEmpty, outsiderCaught, isTie)) {
+      (true, _, _) => 'تم كشف كل برا السالفة في التصويت الحاسم.',
+      (false, true, _) => 'تم كشف بعض برا السالفة، لكن الناجين ما زالوا يناورون.',
+      (false, false, true) => 'التعادل عقد المشهد وفتح باب النجاة أمام برا السالفة.',
+      _ => 'المجموعة شكّت في الأشخاص الخطأ وبرا السالفة ما زال في المشهد.',
     };
 
     return RoundOutcome(
       outsiderIds: outsiderIds,
+      survivingOutsiderIds: survivingOutsiderIds,
+      accusedPlayerIds: accusedPlayerIds,
       topic: topic,
-      mostVotedPlayerId: mostVotedPlayerId,
       voteCounts: counts,
       voteScoreDeltas: voteScoreDeltas,
       scoreDeltas: voteScoreDeltas,
@@ -148,5 +150,35 @@ class GameEngine {
           ),
         )
         .sorted((left, right) => right.score.compareTo(left.score));
+  }
+
+  int _voteDelta(List<String> suspectIds, Set<String> outsiderSet) {
+    return suspectIds.fold<int>(
+      0,
+      (total, suspectId) => total + (outsiderSet.contains(suspectId) ? 1 : -1),
+    );
+  }
+
+  List<String> _buildAccusedPlayerIds({
+    required Map<String, int> counts,
+    required int limit,
+  }) {
+    final sorted = counts.entries.toList()
+      ..sort((left, right) {
+        final byVotes = right.value.compareTo(left.value);
+        if (byVotes != 0) {
+          return byVotes;
+        }
+        return left.key.compareTo(right.key);
+      });
+    if (sorted.isEmpty) {
+      return const [];
+    }
+    final capped = sorted.take(limit).toList(growable: false);
+    final cutoff = capped.last.value;
+    return sorted
+        .where((entry) => entry.value >= cutoff)
+        .map((entry) => entry.key)
+        .toList(growable: false);
   }
 }

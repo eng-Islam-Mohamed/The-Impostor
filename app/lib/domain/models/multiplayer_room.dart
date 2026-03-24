@@ -35,6 +35,32 @@ enum MultiplayerConnectionState {
   disconnected,
 }
 
+int multiplayerMinimumPlayersForMode(String modeSlug) {
+  switch (modeSlug) {
+    case 'quick':
+      return 3;
+    case 'family':
+    case 'classic':
+      return 4;
+    case 'chaos':
+      return 5;
+    case 'teams':
+      return 6;
+    default:
+      return 4;
+  }
+}
+
+int multiplayerMaxOutsidersForPlayerCount(int playerCount) {
+  if (playerCount >= 9) {
+    return 3;
+  }
+  if (playerCount >= 6) {
+    return 2;
+  }
+  return 1;
+}
+
 @immutable
 class MultiplayerPlayer {
   const MultiplayerPlayer({
@@ -77,6 +103,25 @@ class MultiplayerPlayer {
 }
 
 @immutable
+class MultiplayerChatMessage {
+  const MultiplayerChatMessage({
+    required this.id,
+    required this.senderPlayerId,
+    required this.senderName,
+    required this.text,
+    required this.sentAt,
+    required this.isSystem,
+  });
+
+  final String id;
+  final String senderPlayerId;
+  final String senderName;
+  final String text;
+  final DateTime sentAt;
+  final bool isSystem;
+}
+
+@immutable
 class MultiplayerPrivateView {
   const MultiplayerPrivateView({
     required this.role,
@@ -84,6 +129,7 @@ class MultiplayerPrivateView {
     required this.guessOptions,
     required this.voteSubmitted,
     required this.guessedTopic,
+    required this.submittedSuspectIds,
   });
 
   const MultiplayerPrivateView.empty()
@@ -91,13 +137,15 @@ class MultiplayerPrivateView {
         topicLabel = null,
         guessOptions = const [],
         voteSubmitted = false,
-        guessedTopic = null;
+        guessedTopic = null,
+        submittedSuspectIds = const [];
 
   final MultiplayerPlayerRole? role;
   final String? topicLabel;
   final List<String> guessOptions;
   final bool voteSubmitted;
   final String? guessedTopic;
+  final List<String> submittedSuspectIds;
 
   bool get isOutsider => role == MultiplayerPlayerRole.outsider;
   bool get isInsider => role == MultiplayerPlayerRole.insider;
@@ -108,6 +156,7 @@ class MultiplayerPrivateView {
     List<String>? guessOptions,
     bool? voteSubmitted,
     Object? guessedTopic = _sentinel,
+    List<String>? submittedSuspectIds,
   }) {
     return MultiplayerPrivateView(
       role: identical(role, _sentinel) ? this.role : role as MultiplayerPlayerRole?,
@@ -115,6 +164,7 @@ class MultiplayerPrivateView {
       guessOptions: guessOptions ?? this.guessOptions,
       voteSubmitted: voteSubmitted ?? this.voteSubmitted,
       guessedTopic: identical(guessedTopic, _sentinel) ? this.guessedTopic : guessedTopic as String?,
+      submittedSuspectIds: submittedSuspectIds ?? this.submittedSuspectIds,
     );
   }
 }
@@ -126,10 +176,12 @@ class MultiplayerRoundState {
     required this.phase,
     required this.activePlayerId,
     required this.outsiderIds,
+    required this.survivingOutsiderIds,
+    required this.accusedPlayerIds,
     required this.phaseEndsAt,
     required this.requiredVotes,
     required this.submittedVotes,
-    required this.mostVotedPlayerId,
+    required this.voteSelectionLimit,
     required this.outsiderSurvived,
     required this.statusLine,
   });
@@ -139,10 +191,12 @@ class MultiplayerRoundState {
         phase = MultiplayerRoomPhase.lobby,
         activePlayerId = null,
         outsiderIds = const [],
+        survivingOutsiderIds = const [],
+        accusedPlayerIds = const [],
         phaseEndsAt = null,
         requiredVotes = 0,
         submittedVotes = 0,
-        mostVotedPlayerId = null,
+        voteSelectionLimit = 1,
         outsiderSurvived = false,
         statusLine = 'بانتظار بدء الغرفة';
 
@@ -150,10 +204,12 @@ class MultiplayerRoundState {
   final MultiplayerRoomPhase phase;
   final String? activePlayerId;
   final List<String> outsiderIds;
+  final List<String> survivingOutsiderIds;
+  final List<String> accusedPlayerIds;
   final DateTime? phaseEndsAt;
   final int requiredVotes;
   final int submittedVotes;
-  final String? mostVotedPlayerId;
+  final int voteSelectionLimit;
   final bool outsiderSurvived;
   final String statusLine;
 
@@ -162,10 +218,12 @@ class MultiplayerRoundState {
     MultiplayerRoomPhase? phase,
     Object? activePlayerId = _sentinel,
     List<String>? outsiderIds,
+    List<String>? survivingOutsiderIds,
+    List<String>? accusedPlayerIds,
     Object? phaseEndsAt = _sentinel,
     int? requiredVotes,
     int? submittedVotes,
-    Object? mostVotedPlayerId = _sentinel,
+    int? voteSelectionLimit,
     bool? outsiderSurvived,
     String? statusLine,
   }) {
@@ -175,13 +233,13 @@ class MultiplayerRoundState {
       activePlayerId:
           identical(activePlayerId, _sentinel) ? this.activePlayerId : activePlayerId as String?,
       outsiderIds: outsiderIds ?? this.outsiderIds,
+      survivingOutsiderIds: survivingOutsiderIds ?? this.survivingOutsiderIds,
+      accusedPlayerIds: accusedPlayerIds ?? this.accusedPlayerIds,
       phaseEndsAt:
           identical(phaseEndsAt, _sentinel) ? this.phaseEndsAt : phaseEndsAt as DateTime?,
       requiredVotes: requiredVotes ?? this.requiredVotes,
       submittedVotes: submittedVotes ?? this.submittedVotes,
-      mostVotedPlayerId: identical(mostVotedPlayerId, _sentinel)
-          ? this.mostVotedPlayerId
-          : mostVotedPlayerId as String?,
+      voteSelectionLimit: voteSelectionLimit ?? this.voteSelectionLimit,
       outsiderSurvived: outsiderSurvived ?? this.outsiderSurvived,
       statusLine: statusLine ?? this.statusLine,
     );
@@ -199,11 +257,13 @@ class MultiplayerRoomState {
     required this.modeSlug,
     required this.packId,
     required this.maxPlayers,
+    required this.outsiderCount,
     required this.hostPlayerId,
     required this.currentPlayerId,
     required this.players,
     required this.round,
     required this.privateView,
+    required this.chatMessages,
     required this.systemMessage,
   });
 
@@ -215,11 +275,13 @@ class MultiplayerRoomState {
   final String modeSlug;
   final String packId;
   final int maxPlayers;
+  final int outsiderCount;
   final String hostPlayerId;
   final String currentPlayerId;
   final List<MultiplayerPlayer> players;
   final MultiplayerRoundState round;
   final MultiplayerPrivateView privateView;
+  final List<MultiplayerChatMessage> chatMessages;
   final String systemMessage;
 
   MultiplayerPlayer? get currentPlayer {
@@ -229,7 +291,10 @@ class MultiplayerRoomState {
   bool get isCurrentPlayerHost => currentPlayerId == hostPlayerId;
 
   bool get canStart {
-    if (!isCurrentPlayerHost || players.length < 4) {
+    if (!isCurrentPlayerHost || players.length < multiplayerMinimumPlayersForMode(modeSlug)) {
+      return false;
+    }
+    if (outsiderCount > multiplayerMaxOutsidersForPlayerCount(players.length)) {
       return false;
     }
     return players.every((player) => player.isReady || player.isHost);
@@ -244,11 +309,13 @@ class MultiplayerRoomState {
     String? modeSlug,
     String? packId,
     int? maxPlayers,
+    int? outsiderCount,
     String? hostPlayerId,
     String? currentPlayerId,
     List<MultiplayerPlayer>? players,
     MultiplayerRoundState? round,
     MultiplayerPrivateView? privateView,
+    List<MultiplayerChatMessage>? chatMessages,
     String? systemMessage,
   }) {
     return MultiplayerRoomState(
@@ -260,11 +327,13 @@ class MultiplayerRoomState {
       modeSlug: modeSlug ?? this.modeSlug,
       packId: packId ?? this.packId,
       maxPlayers: maxPlayers ?? this.maxPlayers,
+      outsiderCount: outsiderCount ?? this.outsiderCount,
       hostPlayerId: hostPlayerId ?? this.hostPlayerId,
       currentPlayerId: currentPlayerId ?? this.currentPlayerId,
       players: players ?? this.players,
       round: round ?? this.round,
       privateView: privateView ?? this.privateView,
+      chatMessages: chatMessages ?? this.chatMessages,
       systemMessage: systemMessage ?? this.systemMessage,
     );
   }

@@ -4,8 +4,9 @@ import 'package:flutter/foundation.dart';
 class RoundOutcome {
   const RoundOutcome({
     required this.outsiderIds,
+    required this.survivingOutsiderIds,
+    required this.accusedPlayerIds,
     required this.topic,
-    required this.mostVotedPlayerId,
     required this.voteCounts,
     required this.voteScoreDeltas,
     required this.scoreDeltas,
@@ -18,8 +19,9 @@ class RoundOutcome {
   });
 
   final List<String> outsiderIds;
+  final List<String> survivingOutsiderIds;
+  final List<String> accusedPlayerIds;
   final String topic;
-  final String? mostVotedPlayerId;
   final Map<String, int> voteCounts;
   final Map<String, int> voteScoreDeltas;
   final Map<String, int> scoreDeltas;
@@ -32,8 +34,9 @@ class RoundOutcome {
 
   RoundOutcome copyWith({
     List<String>? outsiderIds,
+    List<String>? survivingOutsiderIds,
+    List<String>? accusedPlayerIds,
     String? topic,
-    Object? mostVotedPlayerId = _sentinel,
     Map<String, int>? voteCounts,
     Map<String, int>? voteScoreDeltas,
     Map<String, int>? scoreDeltas,
@@ -46,10 +49,9 @@ class RoundOutcome {
   }) {
     return RoundOutcome(
       outsiderIds: outsiderIds ?? this.outsiderIds,
+      survivingOutsiderIds: survivingOutsiderIds ?? this.survivingOutsiderIds,
+      accusedPlayerIds: accusedPlayerIds ?? this.accusedPlayerIds,
       topic: topic ?? this.topic,
-      mostVotedPlayerId: identical(mostVotedPlayerId, _sentinel)
-          ? this.mostVotedPlayerId
-          : mostVotedPlayerId as String?,
       voteCounts: voteCounts ?? this.voteCounts,
       voteScoreDeltas: voteScoreDeltas ?? this.voteScoreDeltas,
       scoreDeltas: scoreDeltas ?? this.scoreDeltas,
@@ -62,5 +64,3 @@ class RoundOutcome {
     );
   }
 }
-
-const _sentinel = Object();

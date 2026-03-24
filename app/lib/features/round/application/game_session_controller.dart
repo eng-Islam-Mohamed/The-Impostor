@@ -74,7 +74,7 @@ class GameSessionState {
       clueIndex: 0,
       clueLap: 0,
       outsiderGuessIndex: 0,
-      votes: const {},
+      votes: const <String, List<String>>{},
       currentTopic: null,
       outsiderIds: const [],
       outcome: null,
@@ -94,7 +94,7 @@ class GameSessionState {
   final int clueIndex;
   final int clueLap;
   final int outsiderGuessIndex;
-  final Map<String, String> votes;
+  final Map<String, List<String>> votes;
   final String? currentTopic;
   final List<String> outsiderIds;
   final RoundOutcome? outcome;
@@ -116,17 +116,20 @@ class GameSessionState {
   }
 
   PlayerProfile? get currentVoter {
-    if (votes.length >= players.length) {
-      return null;
+    for (final player in players) {
+      if ((votes[player.id]?.length ?? 0) < outsiderCount) {
+        return player;
+      }
     }
-    return players[votes.length];
+    return null;
   }
 
   PlayerProfile? get currentOutsiderGuesser {
-    if (outsiderGuessIndex >= outsiderIds.length) {
+    final remainingOutsiders = outcome?.survivingOutsiderIds ?? outsiderIds;
+    if (outsiderGuessIndex >= remainingOutsiders.length) {
       return null;
     }
-    return players.firstWhereOrNull((player) => player.id == outsiderIds[outsiderGuessIndex]);
+    return players.firstWhereOrNull((player) => player.id == remainingOutsiders[outsiderGuessIndex]);
   }
 
   List<PlayerProfile> get outsiderPlayers {
@@ -148,7 +151,7 @@ class GameSessionState {
     int? clueIndex,
     int? clueLap,
     int? outsiderGuessIndex,
-    Map<String, String>? votes,
+    Map<String, List<String>>? votes,
     Object? currentTopic = _sentinel,
     List<String>? outsiderIds,
     Object? outcome = _sentinel,
@@ -290,7 +293,7 @@ class GameSessionController extends Notifier<GameSessionState> {
       assignments: seed.assignments,
       currentTopic: seed.topic,
       outsiderIds: seed.outsiderIds,
-      votes: {},
+      votes: const <String, List<String>>{},
       phase: RoundPhase.reveal,
       revealIndex: 0,
       clueIndex: 0,
@@ -325,17 +328,23 @@ class GameSessionController extends Notifier<GameSessionState> {
     state = state.copyWith(phase: RoundPhase.voting);
   }
 
-  void submitVote(String suspectId) {
+  void submitVote(List<String> suspectIds) {
     final voter = state.currentVoter;
     if (voter == null || state.outsiderIds.isEmpty || state.currentTopic == null) {
       return;
     }
-    if (suspectId == voter.id) {
+    if (suspectIds.length != state.outsiderCount) {
+      return;
+    }
+    if (suspectIds.toSet().length != suspectIds.length) {
+      return;
+    }
+    if (suspectIds.contains(voter.id)) {
       return;
     }
 
-    final nextVotes = Map<String, String>.from(state.votes)
-      ..[voter.id] = suspectId;
+    final nextVotes = Map<String, List<String>>.from(state.votes)
+      ..[voter.id] = List<String>.from(suspectIds);
 
     if (nextVotes.length == state.players.length) {
       final outcome = _engine.resolveRound(
@@ -361,6 +370,16 @@ class GameSessionController extends Notifier<GameSessionState> {
     if (state.phase != RoundPhase.suspense || state.outcome == null) {
       return;
     }
+    if (state.outcome!.survivingOutsiderIds.isEmpty) {
+      final updatedPlayers = state.scoringEnabled
+          ? _engine.applyOutcome(players: state.players, outcome: state.outcome!)
+          : state.players;
+      state = state.copyWith(
+        players: updatedPlayers,
+        phase: RoundPhase.results,
+      );
+      return;
+    }
     state = state.copyWith(
       phase: RoundPhase.outsiderGuess,
       outsiderGuessIndex: 0,
@@ -379,7 +398,8 @@ class GameSessionController extends Notifier<GameSessionState> {
       outsiderId: outsider.id,
       guessedTopic: guessedTopic,
     );
-    final isLastOutsider = state.outsiderGuessIndex >= state.outsiderIds.length - 1;
+    final survivingOutsiders = finalized.survivingOutsiderIds;
+    final isLastOutsider = state.outsiderGuessIndex >= survivingOutsiders.length - 1;
 
     if (!isLastOutsider) {
       state = state.copyWith(

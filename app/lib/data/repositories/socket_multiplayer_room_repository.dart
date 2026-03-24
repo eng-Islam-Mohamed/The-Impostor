@@ -7,9 +7,11 @@ import 'package:socket_io_client/socket_io_client.dart' as io;
 class SocketMultiplayerRoomRepository implements MultiplayerRoomRepository {
   SocketMultiplayerRoomRepository({
     required this.serverUrl,
+    required this.clientId,
   });
 
   final String serverUrl;
+  final String clientId;
 
   io.Socket? _socket;
   StreamController<MultiplayerRoomState>? _roomController;
@@ -36,6 +38,7 @@ class SocketMultiplayerRoomRepository implements MultiplayerRoomRepository {
     required List<String> topicPool,
     required MultiplayerRoomVisibility visibility,
     required int maxPlayers,
+    required int outsiderCount,
   }) async {
     await _ensureConnected();
     final response = await _emitWithAck(
@@ -43,11 +46,13 @@ class SocketMultiplayerRoomRepository implements MultiplayerRoomRepository {
       {
         'displayName': displayName,
         'avatarIndex': avatarIndex,
+        'clientId': clientId,
         'modeSlug': modeSlug,
         'packId': packId,
         'topicPool': topicPool,
         'visibility': visibility.name,
         'maxPlayers': maxPlayers,
+        'outsiderCount': outsiderCount,
       },
     );
     return _acceptRoomResponse(response);
@@ -66,6 +71,7 @@ class SocketMultiplayerRoomRepository implements MultiplayerRoomRepository {
         'roomCode': roomCode,
         'displayName': displayName,
         'avatarIndex': avatarIndex,
+        'clientId': clientId,
       },
     );
     return _acceptRoomResponse(response);
@@ -127,14 +133,14 @@ class SocketMultiplayerRoomRepository implements MultiplayerRoomRepository {
   Future<void> submitVote({
     required String roomId,
     required String playerId,
-    required String suspectId,
+    required List<String> suspectIds,
   }) async {
     await _emitAction(
       'game.vote.submitted',
       {
         'roomId': roomId,
         'playerId': playerId,
-        'suspectId': suspectId,
+        'suspectIds': suspectIds,
       },
     );
   }
@@ -171,6 +177,38 @@ class SocketMultiplayerRoomRepository implements MultiplayerRoomRepository {
       },
     );
     _latestRoom = null;
+  }
+
+  @override
+  Future<void> banPlayer({
+    required String roomId,
+    required String hostPlayerId,
+    required String targetPlayerId,
+  }) async {
+    await _emitAction(
+      'room.player.ban.requested',
+      {
+        'roomId': roomId,
+        'hostPlayerId': hostPlayerId,
+        'targetPlayerId': targetPlayerId,
+      },
+    );
+  }
+
+  @override
+  Future<void> sendChatMessage({
+    required String roomId,
+    required String playerId,
+    required String text,
+  }) async {
+    await _emitAction(
+      'room.chat.sent',
+      {
+        'roomId': roomId,
+        'playerId': playerId,
+        'text': text,
+      },
+    );
   }
 
   Future<void> dispose() async {
@@ -221,6 +259,13 @@ class SocketMultiplayerRoomRepository implements MultiplayerRoomRepository {
       final message = payload is Map<String, dynamic>
           ? payload['message']?.toString() ?? 'Room error'
           : payload.toString();
+      _roomController?.addError(StateError(message));
+    });
+    socket.on('room.access.revoked', (payload) {
+      final message = payload is Map<String, dynamic>
+          ? payload['message']?.toString() ?? 'Your access to this room was revoked.'
+          : 'Your access to this room was revoked.';
+      _latestRoom = null;
       _roomController?.addError(StateError(message));
     });
     socket.connect();
@@ -286,6 +331,7 @@ class SocketMultiplayerRoomRepository implements MultiplayerRoomRepository {
       modeSlug: json['modeSlug'] as String? ?? 'classic',
       packId: json['packId'] as String? ?? 'countries',
       maxPlayers: json['maxPlayers'] as int? ?? 8,
+      outsiderCount: json['outsiderCount'] as int? ?? 1,
       hostPlayerId: json['hostPlayerId'] as String,
       currentPlayerId: json['currentPlayerId'] as String,
       players: ((json['players'] as List<dynamic>?) ?? const [])
@@ -298,12 +344,18 @@ class SocketMultiplayerRoomRepository implements MultiplayerRoomRepository {
         outsiderIds: ((round['outsiderIds'] as List<dynamic>?) ?? const [])
             .map((item) => item.toString())
             .toList(growable: false),
+        survivingOutsiderIds: ((round['survivingOutsiderIds'] as List<dynamic>?) ?? const [])
+            .map((item) => item.toString())
+            .toList(growable: false),
+        accusedPlayerIds: ((round['accusedPlayerIds'] as List<dynamic>?) ?? const [])
+            .map((item) => item.toString())
+            .toList(growable: false),
         phaseEndsAt: round['phaseEndsAt'] == null
             ? null
             : DateTime.tryParse(round['phaseEndsAt'].toString()),
         requiredVotes: round['requiredVotes'] as int? ?? 0,
         submittedVotes: round['submittedVotes'] as int? ?? 0,
-        mostVotedPlayerId: round['mostVotedPlayerId'] as String?,
+        voteSelectionLimit: round['voteSelectionLimit'] as int? ?? 1,
         outsiderSurvived: round['outsiderSurvived'] as bool? ?? false,
         statusLine: round['statusLine'] as String? ?? '',
       ),
@@ -315,7 +367,13 @@ class SocketMultiplayerRoomRepository implements MultiplayerRoomRepository {
             .toList(growable: false),
         voteSubmitted: privateView['voteSubmitted'] as bool? ?? false,
         guessedTopic: privateView['guessedTopic'] as String?,
+        submittedSuspectIds: ((privateView['submittedSuspectIds'] as List<dynamic>?) ?? const [])
+            .map((item) => item.toString())
+            .toList(growable: false),
       ),
+      chatMessages: ((json['chatMessages'] as List<dynamic>?) ?? const [])
+          .map((item) => _chatMessageFromJson(item as Map<String, dynamic>))
+          .toList(growable: false),
       systemMessage: json['systemMessage'] as String? ?? '',
     );
   }
@@ -329,6 +387,17 @@ class SocketMultiplayerRoomRepository implements MultiplayerRoomRepository {
       isHost: json['isHost'] as bool? ?? false,
       isReady: json['isReady'] as bool? ?? false,
       connectionState: _connectionFromString(json['connectionState'] as String?),
+    );
+  }
+
+  MultiplayerChatMessage _chatMessageFromJson(Map<String, dynamic> json) {
+    return MultiplayerChatMessage(
+      id: json['id'] as String,
+      senderPlayerId: json['senderPlayerId'] as String? ?? '',
+      senderName: json['senderName'] as String? ?? '',
+      text: json['text'] as String? ?? '',
+      sentAt: DateTime.tryParse(json['sentAt']?.toString() ?? '') ?? DateTime.now(),
+      isSystem: json['isSystem'] as bool? ?? false,
     );
   }
 

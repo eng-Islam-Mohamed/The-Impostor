@@ -31,7 +31,7 @@ class _RoundScreenState extends ConsumerState<RoundScreen> {
   static const int _outsiderGuessSeconds = 20;
 
   bool _revealed = false;
-  String? _selectedSuspectId;
+  final Set<String> _selectedSuspectIds = <String>{};
   String? _selectedTopicGuess;
   Timer? _discussionTimer;
   Timer? _outsiderGuessTimer;
@@ -76,8 +76,9 @@ class _RoundScreenState extends ConsumerState<RoundScreen> {
         'إيقاف',
         'ابدأ المؤقت',
         'ابدأ التصويت',
-        'اختر من تظنه برا السالفة. لا يمكنك التصويت لنفسك.',
-        'لحظة حاسمة...',
+        'اختر المشتبهين بعدد برا السالفة. لا يمكنك التصويت لنفسك.',
+        'عدد الأصوات المتاحة',
+      'لحظة حاسمة...',
         'يتم الآن كشف أصحاب برا السالفة وتجهيز التحدي الأخير لهم واحدًا تلو الآخر.',
         'يتم الآن كشف برا السالفة وتجهيز التحدي الأخير.',
         'اختر السالفة الصحيحة من بين 15 خيارًا قبل انتهاء الوقت.',
@@ -94,6 +95,10 @@ class _RoundScreenState extends ConsumerState<RoundScreen> {
       _discussionTimer = null;
       _timerStarted = false;
       _remainingSeconds = session.discussionSeconds;
+    }
+
+    if (session.phase != RoundPhase.voting && _selectedSuspectIds.isNotEmpty) {
+      _selectedSuspectIds.clear();
     }
 
     if (session.phase == RoundPhase.suspense) {
@@ -472,7 +477,13 @@ class _RoundScreenState extends ConsumerState<RoundScreen> {
               ),
               const SizedBox(height: 10),
               Text(
-                localizeUiPhrase(ref, 'اختر من تظنه برا السالفة. لا يمكنك التصويت لنفسك.'),
+                localizeUiPhrase(ref, 'اختر المشتبهين بعدد برا السالفة. لا يمكنك التصويت لنفسك.'),
+              ),
+              const SizedBox(height: 12),
+              Chip(
+                label: Text(
+                  '${localizeUiPhrase(ref, 'عدد الأصوات المتاحة')}: ${session.outsiderCount}',
+                ),
               ),
             ],
           ),
@@ -490,10 +501,19 @@ class _RoundScreenState extends ConsumerState<RoundScreen> {
           ),
           itemBuilder: (context, index) {
             final player = visiblePlayers[index];
-            final isSelected = _selectedSuspectId == player.id;
+            final isSelected = _selectedSuspectIds.contains(player.id);
             return GlowCard(
               isSelected: isSelected,
-              onTap: () => setState(() => _selectedSuspectId = player.id),
+              onTap: () => setState(() {
+                if (isSelected) {
+                  _selectedSuspectIds.remove(player.id);
+                  return;
+                }
+                if (_selectedSuspectIds.length >= session.outsiderCount) {
+                  return;
+                }
+                _selectedSuspectIds.add(player.id);
+              }),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -513,12 +533,14 @@ class _RoundScreenState extends ConsumerState<RoundScreen> {
           label: AppLocalizations.of(context).confirmVote,
           icon: Icons.check_circle_rounded,
           playSound: false,
-          onPressed: _selectedSuspectId == null
+          onPressed: _selectedSuspectIds.length != session.outsiderCount
               ? null
               : () {
                   AppAudio.instance.playVoteConfirm();
-                  ref.read(gameSessionProvider.notifier).submitVote(_selectedSuspectId!);
-                  setState(() => _selectedSuspectId = null);
+                  ref.read(gameSessionProvider.notifier).submitVote(
+                        _selectedSuspectIds.toList(growable: false),
+                      );
+                  setState(_selectedSuspectIds.clear);
                 },
         ),
       ],
@@ -570,6 +592,7 @@ class _RoundScreenState extends ConsumerState<RoundScreen> {
     if (outsider == null || outcome == null) {
       return const SizedBox.shrink();
     }
+    final survivingOutsiderCount = outcome.survivingOutsiderIds.length;
     final remaining = _outsiderRemainingSeconds ?? _outsiderGuessSeconds;
 
     return Column(
@@ -618,7 +641,7 @@ class _RoundScreenState extends ConsumerState<RoundScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              '${AppLocalizations.of(context).youAreOutsider} ${session.outsiderGuessIndex + 1}/${session.outsiderIds.length}: ${outsider.name}',
+                              '${AppLocalizations.of(context).youAreOutsider} ${session.outsiderGuessIndex + 1}/$survivingOutsiderCount: ${outsider.name}',
                               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                                     color: Colors.white,
                                   ),

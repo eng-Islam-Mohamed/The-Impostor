@@ -32,6 +32,7 @@ class _MultiplayerCreateRoomScreenState
   MultiplayerRoomVisibility _visibility = MultiplayerRoomVisibility.privateRoom;
   int _avatarIndex = 0;
   int _maxPlayers = 8;
+  int _outsiderCount = 1;
   String? _packId;
 
   @override
@@ -62,6 +63,7 @@ class _MultiplayerCreateRoomScreenState
       'خاصة',
       'عامة',
       'أقصى عدد لاعبين',
+      'عدد برا السالفة',
       'الأفاتار',
       'رقم',
       'أنشئ الغرفة وانتقل للردهة',
@@ -95,7 +97,16 @@ class _MultiplayerCreateRoomScreenState
                     return ChoiceChip(
                       label: Text(mode.localizedTitle(l10n)),
                       selected: _mode == mode,
-                      onSelected: (_) => setState(() => _mode = mode),
+                      onSelected: (_) {
+                        setState(() {
+                          _mode = mode;
+                          _maxPlayers = _maxPlayers.clamp(mode.minPlayers, 10);
+                          _outsiderCount = _outsiderCount.clamp(
+                            1,
+                            multiplayerMaxOutsidersForPlayerCount(_maxPlayers),
+                          );
+                        });
+                      },
                     );
                   }).toList(),
                 ),
@@ -136,10 +147,35 @@ class _MultiplayerCreateRoomScreenState
                 Text('${localizeUiPhrase(ref, 'أقصى عدد لاعبين')}: $_maxPlayers'),
                 Slider(
                   value: _maxPlayers.toDouble(),
-                  min: 4,
+                  min: _mode.minPlayers.toDouble(),
                   max: 10,
-                  divisions: 6,
-                  onChanged: (value) => setState(() => _maxPlayers = value.round()),
+                  divisions: 10 - _mode.minPlayers,
+                  onChanged: (value) => setState(() {
+                    _maxPlayers = value.round();
+                    _outsiderCount = _outsiderCount.clamp(
+                      1,
+                      multiplayerMaxOutsidersForPlayerCount(_maxPlayers),
+                    );
+                  }),
+                ),
+                const SizedBox(height: 18),
+                Text(localizeUiPhrase(ref, 'عدد برا السالفة'),
+                    style: Theme.of(context).textTheme.titleMedium),
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: List.generate(
+                    multiplayerMaxOutsidersForPlayerCount(_maxPlayers),
+                    (index) {
+                      final count = index + 1;
+                      return ChoiceChip(
+                        label: Text('$count'),
+                        selected: _outsiderCount == count,
+                        onSelected: (_) => setState(() => _outsiderCount = count),
+                      );
+                    },
+                  ),
                 ),
               ],
             ),
@@ -184,6 +220,7 @@ class _MultiplayerCreateRoomScreenState
                     topicPool: packs.firstWhere((pack) => pack.id == selectedPackId).topics,
                     visibility: _visibility,
                     maxPlayers: _maxPlayers,
+                    outsiderCount: _outsiderCount,
                   );
               if (!context.mounted) {
                 return;

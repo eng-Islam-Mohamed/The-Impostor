@@ -55,7 +55,8 @@ class ResultsScreen extends ConsumerWidget {
         outcome.recapLine,
         'برا السالفة هم',
         'برا السالفة هو',
-        'تم كشف أحد برا السالفة في التصويت',
+        'تم كشف كل برا السالفة في التصويت',
+        'تم كشف بعض برا السالفة في التصويت',
         'لم يتم كشفهم في التصويت الأول',
         'التحدي الأخير',
         'لم يتم',
@@ -77,6 +78,9 @@ class ResultsScreen extends ConsumerWidget {
         locale: settings.locale,
       );
     }
+
+    final allOutsidersCaught = outcome.survivingOutsiderIds.isEmpty;
+    final someOutsidersCaught = outcome.outsiderCaught && !allOutsidersCaught;
 
     return BaraScaffold(
       title: l10n.results,
@@ -116,9 +120,11 @@ class ResultsScreen extends ConsumerWidget {
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  outcome.outsiderCaught
-                      ? localizeUiPhrase(ref, 'تم كشف أحد برا السالفة في التصويت')
-                      : localizeUiPhrase(ref, 'لم يتم كشفهم في التصويت الأول'),
+                  allOutsidersCaught
+                      ? localizeUiPhrase(ref, 'تم كشف كل برا السالفة في التصويت')
+                      : someOutsidersCaught
+                          ? localizeUiPhrase(ref, 'تم كشف بعض برا السالفة في التصويت')
+                          : localizeUiPhrase(ref, 'لم يتم كشفهم في التصويت الأول'),
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                         color: outcome.outsiderCaught
                             ? Theme.of(context).colorScheme.primary
