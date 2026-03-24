@@ -40,6 +40,7 @@ class LocalSettingsStore implements SettingsStore {
         hapticsEnabled: json['hapticsEnabled'] as bool? ?? true,
         soundEnabled: json['soundEnabled'] as bool? ?? true,
         reducedMotion: json['reducedMotion'] as bool? ?? false,
+        locale: SupportedLocale.fromCode(json['locale'] as String? ?? 'ar'),
       );
     } catch (_) {
       return const AppSettings.defaults();
@@ -59,6 +60,7 @@ class LocalSettingsStore implements SettingsStore {
         'hapticsEnabled': settings.hapticsEnabled,
         'soundEnabled': settings.soundEnabled,
         'reducedMotion': settings.reducedMotion,
+        'locale': settings.locale.code,
       }),
     );
   }

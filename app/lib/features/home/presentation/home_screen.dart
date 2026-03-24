@@ -1,9 +1,14 @@
+import 'package:bara_alsalfa/core/i18n/game_text.dart';
+import 'package:bara_alsalfa/core/i18n/topic_translation_controller.dart';
+import 'package:bara_alsalfa/core/i18n/ui_phrase_localizer.dart';
 import 'package:bara_alsalfa/core/widgets/bara_button.dart';
 import 'package:bara_alsalfa/core/widgets/bara_scaffold.dart';
 import 'package:bara_alsalfa/core/widgets/glow_card.dart';
 import 'package:bara_alsalfa/data/repositories/local_category_repository.dart';
 import 'package:bara_alsalfa/domain/models/game_mode.dart';
+import 'package:bara_alsalfa/features/game_setup/presentation/manage_subjects_screen.dart';
 import 'package:bara_alsalfa/features/game_setup/presentation/setup_screen.dart';
+import 'package:bara_alsalfa/features/multiplayer/presentation/multiplayer_hub_screen.dart';
 import 'package:bara_alsalfa/features/profile/presentation/profile_screen.dart';
 import 'package:bara_alsalfa/features/profile/presentation/settings_controller.dart';
 import 'package:bara_alsalfa/features/round/application/game_session_controller.dart';
@@ -12,6 +17,7 @@ import 'package:bara_alsalfa/features/store/presentation/store_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:bara_alsalfa/l10n/generated/app_localizations.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -23,6 +29,9 @@ class HomeScreen extends ConsumerWidget {
     final session = ref.watch(gameSessionProvider);
     final packs = ref.watch(categoryLibraryProvider);
     final settings = ref.watch(appSettingsProvider);
+    ref.watch(topicTranslationsProvider);
+    warmUiPhrases(ref, const ['غرفة أونلاين']);
+    final l10n = AppLocalizations.of(context);
 
     return BaraScaffold(
       actions: [
@@ -50,25 +59,25 @@ class HomeScreen extends ConsumerWidget {
               break;
           }
         },
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.home_rounded), label: 'الرئيسية'),
-          NavigationDestination(icon: Icon(Icons.auto_awesome_rounded), label: 'المتجر'),
-          NavigationDestination(icon: Icon(Icons.insights_rounded), label: 'الإحصائيات'),
-          NavigationDestination(icon: Icon(Icons.tune_rounded), label: 'الإعدادات'),
+        destinations: [
+          NavigationDestination(icon: const Icon(Icons.home_rounded), label: l10n.home),
+          NavigationDestination(icon: const Icon(Icons.auto_awesome_rounded), label: l10n.store),
+          NavigationDestination(icon: const Icon(Icons.insights_rounded), label: l10n.statistics),
+          NavigationDestination(icon: const Icon(Icons.tune_rounded), label: l10n.settings),
         ],
       ),
       child: ListView(
         padding: const EdgeInsets.fromLTRB(24, 18, 24, 120),
         children: [
           Text(
-            'برا السالفة',
+            l10n.appTitle,
             style: Theme.of(context).textTheme.displayMedium?.copyWith(
                   fontWeight: FontWeight.w700,
                 ),
           ),
           const SizedBox(height: 10),
           Text(
-            'جلسات أسرع، كشف أذكى، ولمسة عربية محسوبة.',
+            l10n.appTagline,
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                   color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
                 ),
@@ -79,32 +88,47 @@ class HomeScreen extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'ابدأ سهرتك الآن',
+                  l10n.startYourNight,
                   style: Theme.of(context).textTheme.headlineSmall,
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  'آخر إعداد محفوظ: ${session.selectedMode.title} • ${session.players.length} لاعبين',
+                  l10n.lastSavedSetup(
+                    session.selectedMode.localizedTitle(l10n),
+                    session.players.length,
+                  ),
                 ),
                 const SizedBox(height: 22),
                 BaraButton.primary(
-                  label: 'ابدأ لعبة جديدة',
+                  label: l10n.startNewGame,
                   icon: Icons.play_arrow_rounded,
                   onPressed: () => context.push(SetupScreen.routePath),
                 ),
                 const SizedBox(height: 12),
                 BaraButton.secondary(
-                  label: 'جولة سريعة',
+                  label: l10n.quickRound,
                   icon: Icons.flash_on_rounded,
                   onPressed: () => context.push('${SetupScreen.routePath}?mode=${GameMode.quick.slug}'),
+                ),
+                const SizedBox(height: 12),
+                BaraButton.secondary(
+                  label: l10n.manageStories,
+                  icon: Icons.edit_note_rounded,
+                  onPressed: () => context.push(ManageSubjectsScreen.routePath),
+                ),
+                const SizedBox(height: 12),
+                BaraButton.secondary(
+                  label: localizeUiPhrase(ref, 'غرفة أونلاين'),
+                  icon: Icons.wifi_tethering_rounded,
+                  onPressed: () => context.push(MultiplayerHubScreen.routePath),
                 ),
               ],
             ),
           ),
           const SizedBox(height: 24),
           _SectionHeader(
-            title: 'أوضاع جاهزة لليلة',
-            actionLabel: 'عرض الكل',
+            title: l10n.readyModes,
+            actionLabel: l10n.viewAll,
           ),
           const SizedBox(height: 12),
           ...GameMode.values.take(3).map(
@@ -121,15 +145,15 @@ class HomeScreen extends ConsumerWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                mode.title,
+                                mode.localizedTitle(l10n),
                                 style: Theme.of(context).textTheme.titleLarge,
                               ),
                               const SizedBox(height: 8),
-                              Text(mode.subtitle),
+                              Text(mode.localizedSubtitle(l10n)),
                             ],
                           ),
                         ),
-                        Chip(label: Text(mode.isMvpAvailable ? mode.playerRange : 'قريبًا')),
+                        Chip(label: Text(mode.isMvpAvailable ? mode.playerRange : l10n.comingSoon)),
                       ],
                     ),
                   ),
@@ -137,8 +161,8 @@ class HomeScreen extends ConsumerWidget {
               ),
           const SizedBox(height: 10),
           _SectionHeader(
-            title: 'فئات مميزة',
-            actionLabel: 'باك اليوم',
+            title: l10n.featuredCategories,
+            actionLabel: l10n.packOfTheDay,
           ),
           const SizedBox(height: 12),
           SizedBox(
@@ -156,12 +180,23 @@ class HomeScreen extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Chip(
-                          label: Text(pack.isPremium ? 'Premium' : pack.difficultyLabel),
+                          label: Text(
+                            pack.isPremium
+                                ? l10n.premium
+                                : localizedDifficultyLabel(pack, settings.locale),
+                          ),
                         ),
                         const SizedBox(height: 18),
-                        Text(pack.title, style: Theme.of(context).textTheme.titleLarge),
+                        Text(
+                          localizedPackTitle(pack, settings.locale),
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
                         const SizedBox(height: 10),
-                        Text(pack.subtitle, maxLines: 3, overflow: TextOverflow.ellipsis),
+                        Text(
+                          localizedPackSubtitle(pack, settings.locale),
+                          maxLines: 3,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ],
                     ),
                   ),
@@ -173,16 +208,18 @@ class HomeScreen extends ConsumerWidget {
           GlowCard(
             child: Row(
               children: [
-                Icon(Icons.local_fire_department_rounded,
-                    color: Theme.of(context).colorScheme.secondary),
+                Icon(
+                  Icons.local_fire_department_rounded,
+                  color: Theme.of(context).colorScheme.secondary,
+                ),
                 const SizedBox(width: 14),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('تحدي الليلة', style: Theme.of(context).textTheme.titleMedium),
+                      Text(l10n.tonightChallenge, style: Theme.of(context).textTheme.titleMedium),
                       const SizedBox(height: 6),
-                      const Text('العب جولتين متتاليتين بدون حذف أي لاعب من التصويت.'),
+                      Text(l10n.tonightChallengeDesc),
                     ],
                   ),
                 ),

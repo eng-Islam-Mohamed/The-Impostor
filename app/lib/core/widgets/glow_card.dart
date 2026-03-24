@@ -1,3 +1,4 @@
+import 'package:bara_alsalfa/core/audio/app_audio.dart';
 import 'package:flutter/material.dart';
 
 class GlowCard extends StatelessWidget {
@@ -6,6 +7,7 @@ class GlowCard extends StatelessWidget {
     this.onTap,
     this.padding = const EdgeInsets.all(20),
     this.isSelected = false,
+    this.playSound = true,
     super.key,
   });
 
@@ -13,6 +15,7 @@ class GlowCard extends StatelessWidget {
   final VoidCallback? onTap;
   final EdgeInsets padding;
   final bool isSelected;
+  final bool playSound;
 
   @override
   Widget build(BuildContext context) {
@@ -49,7 +52,14 @@ class GlowCard extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(28),
-          onTap: onTap,
+          onTap: onTap == null
+              ? null
+              : () {
+                  if (playSound) {
+                    AppAudio.instance.playSoftTap();
+                  }
+                  onTap?.call();
+                },
           child: Padding(
             padding: padding,
             child: child,

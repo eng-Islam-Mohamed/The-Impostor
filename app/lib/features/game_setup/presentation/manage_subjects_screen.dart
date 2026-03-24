@@ -1,7 +1,12 @@
+import 'package:bara_alsalfa/core/i18n/game_text.dart';
+import 'package:bara_alsalfa/core/i18n/topic_translation_controller.dart';
+import 'package:bara_alsalfa/core/i18n/ui_phrase_localizer.dart';
 import 'package:bara_alsalfa/core/widgets/bara_button.dart';
 import 'package:bara_alsalfa/core/widgets/bara_scaffold.dart';
 import 'package:bara_alsalfa/core/widgets/glow_card.dart';
 import 'package:bara_alsalfa/data/repositories/local_category_repository.dart';
+import 'package:bara_alsalfa/features/profile/presentation/settings_controller.dart';
+import 'package:bara_alsalfa/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -27,17 +32,27 @@ class _ManageSubjectsScreenState extends ConsumerState<ManageSubjectsScreen> {
   @override
   Widget build(BuildContext context) {
     final packs = ref.watch(categoryLibraryProvider);
+    final settings = ref.watch(appSettingsProvider);
+    ref.watch(topicTranslationsProvider);
+    final topicLocalizer = ref.read(topicTranslationsProvider.notifier);
+    final l10n = AppLocalizations.of(context);
     final selectedPackId = _selectedPackId ?? packs.first.id;
     final selectedPack = packs.firstWhere((pack) => pack.id == selectedPackId);
+    warmUiPhrases(ref, const [
+      'من هنا تقدر تضيف أو تحذف السوالف التي يمكن أن تظهر داخل الجولة.',
+      'تم حذف',
+      'آخر سالفة في كل مجموعة تبقى محمية حتى لا تصبح المجموعة فارغة.',
+      'تمت إضافة',
+    ]);
 
     return BaraScaffold(
-      title: 'إدارة السوالف',
+      title: l10n.manageStories,
       showBackButton: true,
       child: ListView(
         padding: const EdgeInsets.fromLTRB(24, 18, 24, 32),
         children: [
           Text(
-            'من هنا تقدر تضيف أو تحذف السوالف التي يمكن أن تظهر داخل الجولة.',
+            localizeUiPhrase(ref, 'من هنا تقدر تضيف أو تحذف السوالف التي يمكن أن تظهر داخل الجولة.'),
             style: Theme.of(context).textTheme.bodyLarge,
           ),
           const SizedBox(height: 18),
@@ -48,7 +63,7 @@ class _ManageSubjectsScreenState extends ConsumerState<ManageSubjectsScreen> {
               final isSelected = selectedPack.id == pack.id;
               return ChoiceChip(
                 selected: isSelected,
-                label: Text(pack.title),
+                label: Text(localizedPackTitle(pack, settings.locale)),
                 onSelected: (_) => setState(() => _selectedPackId = pack.id),
               );
             }).toList(),
@@ -59,18 +74,16 @@ class _ManageSubjectsScreenState extends ConsumerState<ManageSubjectsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  selectedPack.title,
+                  localizedPackTitle(selectedPack, settings.locale),
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
                 const SizedBox(height: 8),
-                Text(selectedPack.subtitle),
+                Text(localizedPackSubtitle(selectedPack, settings.locale)),
                 const SizedBox(height: 18),
                 TextField(
                   controller: _topicController,
                   decoration: InputDecoration(
-                    hintText: selectedPack.id == 'countries'
-                        ? 'أضف دولة'
-                        : 'أضف شخصية تاريخية',
+                    hintText: l10n.enterStory,
                     suffixIcon: IconButton(
                       onPressed: () => _addTopic(selectedPack.id),
                       icon: const Icon(Icons.add_rounded),
@@ -80,9 +93,7 @@ class _ManageSubjectsScreenState extends ConsumerState<ManageSubjectsScreen> {
                 ),
                 const SizedBox(height: 14),
                 BaraButton.primary(
-                  label: selectedPack.id == 'countries'
-                      ? 'إضافة دولة'
-                      : 'إضافة شخصية',
+                  label: l10n.addStory,
                   icon: Icons.add_circle_rounded,
                   onPressed: () => _addTopic(selectedPack.id),
                 ),
@@ -95,7 +106,7 @@ class _ManageSubjectsScreenState extends ConsumerState<ManageSubjectsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'السوالف الحالية (${selectedPack.topics.length})',
+                  l10n.storyCount(selectedPack.topics.length),
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
                 const SizedBox(height: 14),
@@ -113,17 +124,30 @@ class _ManageSubjectsScreenState extends ConsumerState<ManageSubjectsScreen> {
                       ),
                       child: Row(
                         children: [
-                          Expanded(child: Text(topic)),
+                          Expanded(
+                            child: Text(
+                              topicLocalizer.localizedTopic(
+                                packId: selectedPack.id,
+                                topic: topic,
+                                locale: settings.locale,
+                              ),
+                            ),
+                          ),
                           IconButton(
                             onPressed: () async {
                               await ref
                                   .read(categoryLibraryProvider.notifier)
                                   .removeTopic(selectedPack.id, topic);
+                              await ref
+                                  .read(topicTranslationsProvider.notifier)
+                                  .removeTranslations(packId: selectedPack.id, topic: topic);
                               if (!context.mounted) {
                                 return;
                               }
                               ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('تم حذف "$topic"')),
+                                SnackBar(
+                                  content: Text('${localizeUiPhrase(ref, 'تم حذف')} "$topic"'),
+                                ),
                               );
                             },
                             icon: const Icon(Icons.delete_outline_rounded),
@@ -135,7 +159,10 @@ class _ManageSubjectsScreenState extends ConsumerState<ManageSubjectsScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'آخر سالفة في كل مجموعة تبقى محمية حتى لا تصبح المجموعة فارغة.',
+                  localizeUiPhrase(
+                    ref,
+                    'آخر سالفة في كل مجموعة تبقى محمية حتى لا تصبح المجموعة فارغة.',
+                  ),
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ],
@@ -151,13 +178,21 @@ class _ManageSubjectsScreenState extends ConsumerState<ManageSubjectsScreen> {
     if (text.isEmpty) {
       return;
     }
+    final locale = ref.read(appSettingsProvider).locale;
     await ref.read(categoryLibraryProvider.notifier).addTopic(packId, text);
+    await ref
+        .read(topicTranslationsProvider.notifier)
+        .ensureTranslations(
+          packId: packId,
+          topic: text,
+          sourceLocaleCode: locale.code,
+        );
     _topicController.clear();
     if (!mounted) {
       return;
     }
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('تمت إضافة "$text"')),
+      SnackBar(content: Text('${localizeUiPhrase(ref, 'تمت إضافة')} "$text"')),
     );
   }
 }

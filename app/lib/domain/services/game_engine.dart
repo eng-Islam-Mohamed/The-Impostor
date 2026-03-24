@@ -9,12 +9,12 @@ import 'package:collection/collection.dart';
 class GameRoundSeed {
   const GameRoundSeed({
     required this.topic,
-    required this.outsiderId,
+    required this.outsiderIds,
     required this.assignments,
   });
 
   final String topic;
-  final String outsiderId;
+  final List<String> outsiderIds;
   final List<SecretAssignment> assignments;
 }
 
@@ -26,8 +26,10 @@ class GameEngine {
   GameRoundSeed createRound({
     required List<PlayerProfile> players,
     required CategoryPack pack,
+    required int outsiderCount,
   }) {
-    final outsider = players[_random.nextInt(players.length)];
+    final shuffledPlayers = [...players]..shuffle(_random);
+    final outsiders = shuffledPlayers.take(outsiderCount).map((player) => player.id).toSet();
     final topic = pack.topics[_random.nextInt(pack.topics.length)];
 
     final assignments = players
@@ -36,24 +38,26 @@ class GameEngine {
             playerId: player.id,
             playerName: player.name,
             topic: topic,
-            isOutsider: player.id == outsider.id,
+            isOutsider: outsiders.contains(player.id),
           ),
         )
         .toList(growable: false);
 
     return GameRoundSeed(
       topic: topic,
-      outsiderId: outsider.id,
+      outsiderIds: outsiders.toList(growable: false),
       assignments: assignments,
     );
   }
 
   RoundOutcome resolveRound({
     required List<PlayerProfile> players,
-    required String outsiderId,
+    required List<String> outsiderIds,
     required String topic,
     required Map<String, String> votes,
+    required List<String> topicPool,
   }) {
+    final outsiderSet = outsiderIds.toSet();
     final counts = <String, int>{};
     for (final suspectId in votes.values) {
       counts.update(suspectId, (value) => value + 1, ifAbsent: () => 1);
@@ -66,42 +70,71 @@ class GameEngine {
         .toList(growable: false);
     final isTie = leaders.length > 1;
     final mostVotedPlayerId = leaders.isEmpty ? null : leaders.first;
-    final outsiderCaught = !isTie && mostVotedPlayerId == outsiderId;
+    final outsiderCaught = !isTie && outsiderSet.contains(mostVotedPlayerId);
 
-    final scoreDeltas = {
-      for (final player in players) player.id: 0,
+    final voteScoreDeltas = <String, int>{
+      for (final player in players)
+        player.id: outsiderSet.contains(player.id)
+            ? 0
+            : outsiderSet.contains(votes[player.id])
+                ? 1
+                : -1,
     };
 
-    if (outsiderCaught) {
-      for (final voteEntry in votes.entries) {
-        if (voteEntry.value == outsiderId) {
-          scoreDeltas.update(voteEntry.key, (value) => value + 2);
-        }
-      }
-    } else {
-      scoreDeltas.update(outsiderId, (value) => value + (isTie ? 4 : 3));
-      final decoy = mostVotedPlayerId;
-      if (decoy != null && decoy != outsiderId) {
-        scoreDeltas.update(decoy, (value) => value + 1);
-      }
-    }
-
-    final recapLine = switch ((outsiderCaught, isTie)) {
-      (true, _) => 'انكشف برا السالفة بعد تصويت دقيق في آخر لحظة.',
-      (false, true) => 'الجولة انتهت بفوضى جميلة وتعادل أنقذ برا السالفة.',
-      _ => 'برا السالفة اندمج بذكاء ومرّ من التصويت بكل ثقة.',
+    final recapLine = switch ((outsiderCaught, isTie, outsiderIds.length > 1)) {
+      (true, _, true) => 'تم كشف واحد من برا السالفة، لكن البقية ما زالوا يراوغون.',
+      (true, _, false) => 'انكشف برا السالفة بعد تصويت دقيق في آخر لحظة.',
+      (false, true, _) => 'التعادل خلط الأوراق ومنح برا السالفة فرصة أخيرة للنجاة.',
+      _ => 'المجموعة شكّت في الشخص الخطأ وبرا السالفة ما زال في المشهد.',
     };
 
     return RoundOutcome(
-      outsiderId: outsiderId,
+      outsiderIds: outsiderIds,
       topic: topic,
       mostVotedPlayerId: mostVotedPlayerId,
       voteCounts: counts,
-      scoreDeltas: scoreDeltas,
+      voteScoreDeltas: voteScoreDeltas,
+      scoreDeltas: voteScoreDeltas,
+      outsiderGuessOptions: buildOutsiderGuessOptions(topic: topic, topicPool: topicPool),
       outsiderCaught: outsiderCaught,
       isTie: isTie,
       recapLine: recapLine,
     );
+  }
+
+  RoundOutcome finalizeOutsiderGuess({
+    required RoundOutcome outcome,
+    required String outsiderId,
+    required String guessedTopic,
+  }) {
+    final isCorrect = guessedTopic == outcome.topic;
+    final updatedScores = Map<String, int>.from(outcome.scoreDeltas)
+      ..update(
+        outsiderId,
+        (value) => value + (isCorrect ? 1 : -1),
+        ifAbsent: () => isCorrect ? 1 : -1,
+      );
+    final updatedGuesses = Map<String, String>.from(outcome.outsiderGuesses)
+      ..[outsiderId] = guessedTopic;
+    final updatedResults = Map<String, bool>.from(outcome.outsiderGuessResults)
+      ..[outsiderId] = isCorrect;
+
+    return outcome.copyWith(
+      scoreDeltas: updatedScores,
+      outsiderGuesses: updatedGuesses,
+      outsiderGuessResults: updatedResults,
+    );
+  }
+
+  List<String> buildOutsiderGuessOptions({
+    required String topic,
+    required List<String> topicPool,
+    int optionCount = 15,
+  }) {
+    final pool = topicPool.toSet().toList(growable: true)..remove(topic);
+    pool.shuffle(_random);
+    final options = <String>[topic, ...pool.take(max(0, optionCount - 1))]..shuffle(_random);
+    return options;
   }
 
   List<PlayerProfile> applyOutcome({

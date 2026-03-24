@@ -1,7 +1,10 @@
+import 'package:bara_alsalfa/core/i18n/ui_phrase_localizer.dart';
+import 'package:bara_alsalfa/core/widgets/bara_button.dart';
 import 'package:bara_alsalfa/core/widgets/bara_scaffold.dart';
 import 'package:bara_alsalfa/core/widgets/glow_card.dart';
 import 'package:bara_alsalfa/core/widgets/player_avatar.dart';
 import 'package:bara_alsalfa/features/round/application/game_session_controller.dart';
+import 'package:bara_alsalfa/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -13,9 +16,20 @@ class StatsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final players = ref.watch(gameSessionProvider).players;
+    final l10n = AppLocalizations.of(context);
+
+    warmUiPhrases(
+      ref,
+      const [
+        'أفضل اللاعبين الليلة',
+        'تصفير النقاط',
+        'أفضل اللحظات',
+        'سيتم هنا لاحقًا حفظ أفضل الخدع، أطول نقاش، وأكثر لاعب مثير للشك.',
+      ],
+    );
 
     return BaraScaffold(
-      title: 'الإحصائيات',
+      title: l10n.statistics,
       showBackButton: true,
       child: ListView(
         padding: const EdgeInsets.fromLTRB(24, 18, 24, 32),
@@ -24,7 +38,10 @@ class StatsScreen extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('أفضل اللاعبين الليلة', style: Theme.of(context).textTheme.titleLarge),
+                Text(
+                  localizeUiPhrase(ref, 'أفضل اللاعبين الليلة'),
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
                 const SizedBox(height: 14),
                 ...players.map(
                   (player) => Padding(
@@ -38,22 +55,36 @@ class StatsScreen extends ConsumerWidget {
                         ),
                         const SizedBox(width: 12),
                         Expanded(child: Text(player.name)),
-                        Text('${player.score}'),
+                        Text(
+                          '${player.score}',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
                       ],
                     ),
                   ),
+                ),
+                const SizedBox(height: 8),
+                BaraButton.secondary(
+                  label: localizeUiPhrase(ref, 'تصفير النقاط'),
+                  icon: Icons.refresh_rounded,
+                  onPressed: () => ref.read(gameSessionProvider.notifier).resetScores(),
                 ),
               ],
             ),
           ),
           const SizedBox(height: 12),
-          const GlowCard(
+          GlowCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Best moments'),
-                SizedBox(height: 10),
-                Text('سيتم هنا لاحقًا حفظ أفضل الخدع، أطول نقاش، وأكثر لاعب مثير للشك.'),
+                Text(localizeUiPhrase(ref, 'أفضل اللحظات')),
+                const SizedBox(height: 10),
+                Text(
+                  localizeUiPhrase(
+                    ref,
+                    'سيتم هنا لاحقًا حفظ أفضل الخدع، أطول نقاش، وأكثر لاعب مثير للشك.',
+                  ),
+                ),
               ],
             ),
           ),

@@ -3,6 +3,11 @@ import 'package:bara_alsalfa/features/game_setup/presentation/manage_subjects_sc
 import 'package:bara_alsalfa/features/game_setup/presentation/players_screen.dart';
 import 'package:bara_alsalfa/features/game_setup/presentation/setup_screen.dart';
 import 'package:bara_alsalfa/features/home/presentation/home_screen.dart';
+import 'package:bara_alsalfa/features/multiplayer/presentation/multiplayer_create_room_screen.dart';
+import 'package:bara_alsalfa/features/multiplayer/presentation/multiplayer_hub_screen.dart';
+import 'package:bara_alsalfa/features/multiplayer/presentation/multiplayer_join_room_screen.dart';
+import 'package:bara_alsalfa/features/multiplayer/presentation/multiplayer_lobby_screen.dart';
+import 'package:bara_alsalfa/features/multiplayer/presentation/multiplayer_room_screen.dart';
 import 'package:bara_alsalfa/features/onboarding/presentation/onboarding_screen.dart';
 import 'package:bara_alsalfa/features/profile/presentation/profile_screen.dart';
 import 'package:bara_alsalfa/features/results/presentation/results_screen.dart';
@@ -28,6 +33,26 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: HomeScreen.routePath,
         builder: (context, state) => const HomeScreen(),
+      ),
+      GoRoute(
+        path: MultiplayerHubScreen.routePath,
+        builder: (context, state) => const MultiplayerHubScreen(),
+      ),
+      GoRoute(
+        path: MultiplayerCreateRoomScreen.routePath,
+        builder: (context, state) => const MultiplayerCreateRoomScreen(),
+      ),
+      GoRoute(
+        path: MultiplayerJoinRoomScreen.routePath,
+        builder: (context, state) => const MultiplayerJoinRoomScreen(),
+      ),
+      GoRoute(
+        path: MultiplayerLobbyScreen.routePath,
+        builder: (context, state) => const MultiplayerLobbyScreen(),
+      ),
+      GoRoute(
+        path: MultiplayerRoomScreen.routePath,
+        builder: (context, state) => const MultiplayerRoomScreen(),
       ),
       GoRoute(
         path: SetupScreen.routePath,

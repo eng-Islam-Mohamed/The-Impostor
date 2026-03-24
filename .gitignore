@@ -1,0 +1,12 @@
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.flutter-sdk/
+app/build/
+app/android/build/
+app/.dart_tool/
+server/node_modules/
+server/dist/
+hs_err_pid*.log
+replay_pid*.log

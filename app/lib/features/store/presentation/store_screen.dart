@@ -1,35 +1,46 @@
+import 'package:bara_alsalfa/core/i18n/ui_phrase_localizer.dart';
 import 'package:bara_alsalfa/core/widgets/bara_scaffold.dart';
 import 'package:bara_alsalfa/core/widgets/glow_card.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
 
-class StoreScreen extends StatelessWidget {
+class StoreScreen extends ConsumerWidget {
   const StoreScreen({super.key});
 
   static const routePath = '/store';
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    warmUiPhrases(ref, const [
+      'جلسة آخر الليل',
+      'باك بريميوم للكلمات الأصعب والجو الأقوى.',
+      'ثيم بصري ذهبي + باك خاص + شارة مشاركة.',
+      'لمة العائلة',
+      'تجربة ألطف ومناسبة للجلسات المختلطة.',
+    ]);
     return BaraScaffold(
-      title: 'المتجر',
+      title: MaterialLocalizations.of(context).viewLicensesButtonLabel == ''
+          ? localizeUiPhrase(ref, 'المتجر')
+          : localizeUiPhrase(ref, 'المتجر'),
       showBackButton: true,
       child: ListView(
         padding: const EdgeInsets.fromLTRB(24, 18, 24, 32),
-        children: const [
+        children: [
           _StoreCard(
-            title: 'جلسة آخر الليل',
-            subtitle: 'باك بريميوم للكلمات الأصعب والجو الأقوى.',
+            title: localizeUiPhrase(ref, 'جلسة آخر الليل'),
+            subtitle: localizeUiPhrase(ref, 'باك بريميوم للكلمات الأصعب والجو الأقوى.'),
             badge: 'Premium Pack',
           ),
-          SizedBox(height: 12),
+          const SizedBox(height: 12),
           _StoreCard(
             title: 'Party Bundle',
-            subtitle: 'ثيم بصري ذهبي + باك خاص + شارة مشاركة.',
+            subtitle: localizeUiPhrase(ref, 'ثيم بصري ذهبي + باك خاص + شارة مشاركة.'),
             badge: 'Bundle',
           ),
-          SizedBox(height: 12),
+          const SizedBox(height: 12),
           _StoreCard(
-            title: 'لمة العائلة',
-            subtitle: 'تجربة ألطف ومناسبة للجلسات المختلطة.',
+            title: localizeUiPhrase(ref, 'لمة العائلة'),
+            subtitle: localizeUiPhrase(ref, 'تجربة ألطف ومناسبة للجلسات المختلطة.'),
             badge: 'Family',
           ),
         ],

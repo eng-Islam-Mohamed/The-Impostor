@@ -1,3 +1,4 @@
+import 'package:bara_alsalfa/core/audio/app_audio.dart';
 import 'package:bara_alsalfa/data/local/local_settings_store.dart';
 import 'package:bara_alsalfa/domain/models/app_settings.dart';
 import 'package:flutter/material.dart';
@@ -38,11 +39,17 @@ class AppSettingsController extends Notifier<AppSettings> {
 
   Future<void> setSound(bool enabled) async {
     state = state.copyWith(soundEnabled: enabled);
+    await AppAudio.instance.setEnabled(enabled);
     await _settingsStore.save(state);
   }
 
   Future<void> setReducedMotion(bool enabled) async {
     state = state.copyWith(reducedMotion: enabled);
+    await _settingsStore.save(state);
+  }
+
+  Future<void> setLocale(SupportedLocale locale) async {
+    state = state.copyWith(locale: locale);
     await _settingsStore.save(state);
   }
 }

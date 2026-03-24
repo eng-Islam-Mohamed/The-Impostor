@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:bara_alsalfa/core/i18n/ui_phrase_localizer.dart';
 import 'package:bara_alsalfa/features/home/presentation/home_screen.dart';
 import 'package:bara_alsalfa/features/onboarding/presentation/onboarding_screen.dart';
 import 'package:bara_alsalfa/features/profile/presentation/settings_controller.dart';
@@ -44,6 +45,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
+    warmUiPhrases(ref, const ['Party tension, Arabic style.']);
     final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
@@ -100,7 +102,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
               ),
               const SizedBox(height: 10),
               Text(
-                'Party tension, Arabic style.',
+                localizeUiPhrase(ref, 'Party tension, Arabic style.'),
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                       color: colorScheme.onSurface.withValues(alpha: 0.7),
                     ),

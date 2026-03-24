@@ -1,27 +1,50 @@
+import 'package:bara_alsalfa/domain/models/app_settings.dart';
 import 'package:bara_alsalfa/domain/models/category_pack.dart';
 import 'package:bara_alsalfa/domain/models/player_profile.dart';
 
-const List<String> playerNameSeeds = [
-  'لاعب 1',
-  'لاعب 2',
-  'لاعب 3',
-  'لاعب 4',
-  'لاعب 5',
-  'لاعب 6',
-  'لاعب 7',
-  'لاعب 8',
-];
+const int starterPlayerCount = 5;
+const int maxDefaultPlayerSlots = 8;
 
-List<PlayerProfile> buildStarterPlayers() {
+List<PlayerProfile> buildStarterPlayers({
+  SupportedLocale locale = SupportedLocale.arabic,
+}) {
   return List.generate(
-    5,
+    starterPlayerCount,
     (index) => PlayerProfile(
       id: 'player-$index',
-      name: playerNameSeeds[index],
+      name: defaultPlayerName(index + 1, locale),
       avatarIndex: index,
       score: 0,
     ),
   );
+}
+
+String defaultPlayerName(int index, SupportedLocale locale) {
+  final prefix = switch (locale) {
+    SupportedLocale.arabic => 'لاعب',
+    SupportedLocale.english => 'Player',
+    SupportedLocale.chinese => '玩家',
+    SupportedLocale.hindi => 'खिलाड़ी',
+    SupportedLocale.spanish => 'Jugador',
+    SupportedLocale.french => 'Joueur',
+    SupportedLocale.bengali => 'খেলোয়াড়',
+    SupportedLocale.portuguese => 'Jogador',
+    SupportedLocale.russian => 'Игрок',
+    SupportedLocale.indonesian => 'Pemain',
+  };
+  return '$prefix $index';
+}
+
+bool isDefaultPlayerName(String name) {
+  final trimmed = name.trim();
+  for (final locale in SupportedLocale.values) {
+    for (var index = 1; index <= maxDefaultPlayerSlots + 20; index++) {
+      if (trimmed == defaultPlayerName(index, locale)) {
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 const seededCategoryPacks = [

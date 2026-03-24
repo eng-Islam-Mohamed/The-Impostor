@@ -1,6 +1,7 @@
 import 'package:bara_alsalfa/core/widgets/bara_button.dart';
 import 'package:bara_alsalfa/core/widgets/bara_scaffold.dart';
 import 'package:bara_alsalfa/core/widgets/glow_card.dart';
+import 'package:bara_alsalfa/core/i18n/ui_phrase_localizer.dart';
 import 'package:bara_alsalfa/features/home/presentation/home_screen.dart';
 import 'package:bara_alsalfa/features/profile/presentation/settings_controller.dart';
 import 'package:flutter/material.dart';
@@ -40,6 +41,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    warmUiPhrases(
+      ref,
+      [
+        for (final slide in _slides) ...[slide.title, slide.body],
+        'تخطي',
+        'ابدأ اللعب',
+        'التالي',
+      ],
+    );
     return BaraScaffold(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
@@ -55,7 +65,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     context.go(HomeScreen.routePath);
                   }
                 },
-                child: const Text('تخطي'),
+                child: Text(localizeUiPhrase(ref, 'تخطي')),
               ),
             ),
             Expanded(
@@ -74,13 +84,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                           Icon(slide.icon, size: 64, color: Theme.of(context).colorScheme.primary),
                           const SizedBox(height: 24),
                           Text(
-                            slide.title,
+                            localizeUiPhrase(ref, slide.title),
                             textAlign: TextAlign.center,
                             style: Theme.of(context).textTheme.headlineMedium,
                           ),
                           const SizedBox(height: 16),
                           Text(
-                            slide.body,
+                            localizeUiPhrase(ref, slide.body),
                             textAlign: TextAlign.center,
                             style: Theme.of(context).textTheme.bodyLarge,
                           ),
@@ -111,7 +121,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             ),
             const SizedBox(height: 24),
             BaraButton.primary(
-              label: _page == _slides.length - 1 ? 'ابدأ اللعب' : 'التالي',
+              label: _page == _slides.length - 1
+                  ? localizeUiPhrase(ref, 'ابدأ اللعب')
+                  : localizeUiPhrase(ref, 'التالي'),
               icon: Icons.arrow_back_rounded,
               onPressed: () async {
                 if (_page == _slides.length - 1) {

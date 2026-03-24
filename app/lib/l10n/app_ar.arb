@@ -1,0 +1,209 @@
+{
+  "@@locale": "ar",
+  "appTitle": "برا السالفة",
+  "@appTitle": {
+    "description": "The app title"
+  },
+  "settings": "الإعدادات",
+  "@settings": {
+    "description": "Settings page title"
+  },
+  "darkMode": "الوضع الداكن",
+  "darkModeSubtitle": "تجربة أكثر هدوءًا للسهرات الليلية",
+  "haptics": "الاهتزازات",
+  "hapticsSubtitle": "لمسات تكتيكية أثناء كشف الدور",
+  "sound": "الصوت",
+  "soundSubtitle": "جاهز لوصل المؤثرات والموسيقى لاحقًا",
+  "reducedMotion": "تقليل الحركة",
+  "reducedMotionSubtitle": "انتقالات أخف للأجهزة الأبطأ أو لمن يفضّل الهدوء",
+  "language": "اللغة",
+  "languageSubtitle": "اختر لغة التطبيق",
+  "followMe": "تابعني",
+  "openLinkError": "تعذر فتح الرابط الآن",
+  "builtBy": "Built by Benaboud Mohamed Islam",
+  "copyright": "© برا السالفة",
+
+  "home": "الرئيسية",
+  "store": "المتجر",
+  "statistics": "الإحصائيات",
+
+  "appTagline": "جلسات أسرع، كشف أذكى، ولمسة عربية محسوبة.",
+  "startYourNight": "ابدأ سهرتك الآن",
+  "lastSavedSetup": "آخر إعداد محفوظ: {mode} • {playerCount} لاعبين",
+  "@lastSavedSetup": {
+    "placeholders": {
+      "mode": {"type": "String"},
+      "playerCount": {"type": "int"}
+    }
+  },
+  "startNewGame": "ابدأ لعبة جديدة",
+  "quickRound": "جولة سريعة",
+  "manageStories": "إدارة السوالف",
+  "readyModes": "أوضاع جاهزة لليلة",
+  "viewAll": "عرض الكل",
+  "comingSoon": "قريبًا",
+  "featuredCategories": "فئات مميزة",
+  "packOfTheDay": "باك اليوم",
+  "tonightChallenge": "تحدي الليلة",
+  "tonightChallengeDesc": "العب جولتين متتاليتين بدون حذف أي لاعب من التصويت.",
+  "premium": "Premium",
+
+  "story": "سالفة",
+  "@story": {
+    "description": "The word for story/topic in the game context"
+  },
+  "stories": "سوالف",
+  "@stories": {
+    "description": "Plural form of story"
+  },
+  "storyCount": "{count} سالفة",
+  "@storyCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "addStory": "أضف سالفة",
+  "enterStory": "أدخل السالفة",
+  "outsider": "برا السالفة",
+  "@outsider": {
+    "description": "The outsider role - someone who doesn't know the topic"
+  },
+  "youAreOutsider": "أنت برا السالفة",
+  "oneOfYouIsOutsider": "واحد منكم برا السالفة",
+  "chooseOutsider": "اختر من تظنه برا السالفة",
+  "outsiderIs": "برا السالفة هو",
+  "outsidersAre": "برا السالفة هم",
+
+  "players": "اللاعبون",
+  "player": "لاعب",
+  "playerCount": "{count} لاعبين",
+  "@playerCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "addPlayer": "أضف لاعب",
+  "enterPlayerName": "أدخل اسم اللاعب",
+  "minPlayersRequired": "يجب إضافة {min} لاعبين على الأقل",
+  "@minPlayersRequired": {
+    "placeholders": {
+      "min": {"type": "int"}
+    }
+  },
+
+  "classic": "كلاسيك",
+  "classicSubtitle": "الوضع الأصلي بدون تعديل",
+  "quick": "سريع",
+  "quickSubtitle": "جولات أقصر للعب الخفيف",
+  "teams": "فرق",
+  "teamsSubtitle": "تنافس بين فريقين",
+  "family": "عائلي",
+  "familySubtitle": "سوالف آمنة للجميع",
+  "chaos": "فوضى",
+  "chaosSubtitle": "قواعد مقلوبة ومفاجآت",
+
+  "round": "جولة",
+  "roundNumber": "الجولة {number}",
+  "@roundNumber": {
+    "placeholders": {
+      "number": {"type": "int"}
+    }
+  },
+  "revealPhase": "مرحلة الكشف",
+  "cluePhase": "مرحلة التلميحات",
+  "discussionPhase": "مرحلة النقاش",
+  "votingPhase": "مرحلة التصويت",
+  "guessPhase": "مرحلة التخمين",
+
+  "yourRole": "دورك",
+  "yourTopic": "السالفة",
+  "tapToReveal": "اضغط للكشف",
+  "hideRole": "إخفاء الدور",
+  "nextPlayer": "اللاعب التالي",
+  "startRound": "ابدأ الجولة",
+  "endRound": "أنهِ الجولة",
+
+  "vote": "صوّت",
+  "votes": "أصوات",
+  "voteCount": "{count} صوت",
+  "@voteCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "confirmVote": "تأكيد التصويت",
+  "changeVote": "تغيير التصويت",
+
+  "guess": "خمّن",
+  "guessTheTopic": "خمّن السالفة",
+  "correctGuess": "إجابة صحيحة!",
+  "wrongGuess": "إجابة خاطئة!",
+
+  "results": "النتائج",
+  "winner": "الفائز",
+  "winners": "الفائزون",
+  "insidersWin": "فاز أصحاب السالفة!",
+  "outsiderWins": "فاز من هو برا السالفة!",
+  "playAgain": "العب مرة أخرى",
+  "backToHome": "العودة للرئيسية",
+
+  "points": "نقاط",
+  "pointsCount": "{count} نقطة",
+  "@pointsCount": {
+    "placeholders": {
+      "count": {"type": "int"}
+    }
+  },
+  "totalPoints": "مجموع النقاط",
+
+  "timer": "المؤقت",
+  "seconds": "ثانية",
+  "timeUp": "انتهى الوقت!",
+
+  "continue_": "متابعة",
+  "cancel": "إلغاء",
+  "confirm": "تأكيد",
+  "skip": "تخطي",
+  "done": "تم",
+  "save": "حفظ",
+  "delete": "حذف",
+  "edit": "تعديل",
+  "add": "إضافة",
+  "close": "إغلاق",
+  "back": "رجوع",
+  "next": "التالي",
+  "yes": "نعم",
+  "no": "لا",
+
+  "selectCategories": "اختر الفئات",
+  "categories": "الفئات",
+  "category": "فئة",
+  "allCategories": "جميع الفئات",
+
+  "setup": "الإعداد",
+  "gameSetup": "إعداد اللعبة",
+  "selectMode": "اختر الوضع",
+  "selectPlayers": "اختر اللاعبين",
+
+  "onboardingTitle1": "مرحبًا في برا السالفة",
+  "onboardingDesc1": "لعبة جماعية ممتعة لكشف من لا يعرف الموضوع",
+  "onboardingTitle2": "كيف تلعب",
+  "onboardingDesc2": "شخص واحد لا يعرف السالفة، والباقي يحاولون كشفه",
+  "onboardingTitle3": "ابدأ الآن",
+  "onboardingDesc3": "اجمع أصدقاءك وابدأ المتعة",
+  "getStarted": "ابدأ",
+
+  "languageEnglish": "English",
+  "languageChinese": "中文",
+  "languageHindi": "हिन्दी",
+  "languageSpanish": "Español",
+  "languageArabic": "العربية",
+  "languageFrench": "Français",
+  "languageBengali": "বাংলা",
+  "languagePortuguese": "Português",
+  "languageRussian": "Русский",
+  "languageIndonesian": "Bahasa Indonesia",
+
+  "selectLanguage": "اختر اللغة",
+  "languageChanged": "تم تغيير اللغة"
+}
