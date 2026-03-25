@@ -79,6 +79,8 @@ interface ServerRoom {
 const port = Number(process.env.PORT ?? 8080);
 const publicBaseUrl = (process.env.PUBLIC_BASE_URL ?? '').trim();
 const corsOrigin = process.env.CORS_ORIGIN?.trim();
+const outsiderGuessSeconds = 20;
+const timedOutGuessToken = '__TIME_UP__';
 
 const app = express();
 app.use(
@@ -104,6 +106,23 @@ const io = new Server(server, {
 });
 
 const rooms = new Map<string, ServerRoom>();
+
+setInterval(() => {
+  for (const room of rooms.values()) {
+    if (room.round.phase !== 'outsiderGuess' || room.round.phaseEndsAt == null) {
+      continue;
+    }
+    if (Date.now() < Date.parse(room.round.phaseEndsAt)) {
+      continue;
+    }
+    const activeOutsiderId = room.round.activePlayerId;
+    if (!activeOutsiderId) {
+      continue;
+    }
+    submitOutsiderGuess(room, activeOutsiderId, timedOutGuessToken);
+    emitRoom(room);
+  }
+}, 1000);
 
 io.on('connection', (socket) => {
   socket.on('room.create.requested', (payload, ack) => {
@@ -419,7 +438,7 @@ function advancePhase(room: ServerRoom): void {
           (outsiderId) => !room.round.guessedTopicByPlayer[outsiderId],
         ) ?? room.round.survivingOutsiderIds[0];
         room.round.statusLine = 'الهاتف الخاص ببرا السالفة الناجي وحده يستقبل شاشة التخمين الآن.';
-        room.round.phaseEndsAt = secondsFromNow(30);
+        room.round.phaseEndsAt = secondsFromNow(outsiderGuessSeconds);
       } else {
         room.round.phase = 'results';
         room.round.activePlayerId = null;
@@ -434,7 +453,7 @@ function advancePhase(room: ServerRoom): void {
       if (remaining.length > 0) {
         room.round.activePlayerId = remaining[0];
         room.round.statusLine = 'انتقل التخمين الآن إلى برا السالفة التالي.';
-        room.round.phaseEndsAt = secondsFromNow(30);
+        room.round.phaseEndsAt = secondsFromNow(outsiderGuessSeconds);
       } else {
         room.round.phase = 'results';
         room.round.activePlayerId = null;
@@ -523,7 +542,8 @@ function submitOutsiderGuess(room: ServerRoom, playerId: string, guessedTopic: s
     throw new Error('Only the active surviving outsider may guess.');
   }
   const isCorrect = guessedTopic === room.round.topic;
-  room.round.guessedTopicByPlayer[playerId] = guessedTopic;
+  room.round.guessedTopicByPlayer[playerId] =
+    guessedTopic === timedOutGuessToken ? 'انتهى الوقت' : guessedTopic;
   applyScoreDeltas(room, {
     [playerId]: isCorrect ? 1 : -1,
   });
@@ -534,7 +554,7 @@ function submitOutsiderGuess(room: ServerRoom, playerId: string, guessedTopic: s
     room.round.phase = 'outsiderGuess';
     room.round.activePlayerId = remainingGuessers[0];
     room.round.statusLine = 'انتقل التخمين الآن إلى برا السالفة التالي.';
-    room.round.phaseEndsAt = secondsFromNow(30);
+    room.round.phaseEndsAt = secondsFromNow(outsiderGuessSeconds);
   } else {
     room.round.phase = 'results';
     room.round.activePlayerId = null;

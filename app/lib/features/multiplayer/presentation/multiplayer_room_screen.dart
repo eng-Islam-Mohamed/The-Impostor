@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:bara_alsalfa/core/i18n/topic_translation_controller.dart';
 import 'package:bara_alsalfa/core/i18n/ui_phrase_localizer.dart';
 import 'package:bara_alsalfa/core/widgets/bara_button.dart';
@@ -25,12 +27,15 @@ class MultiplayerRoomScreen extends ConsumerStatefulWidget {
 }
 
 class _MultiplayerRoomScreenState extends ConsumerState<MultiplayerRoomScreen> {
+  static const int _outsiderGuessSeconds = 20;
   String? _selectedGuess;
   final Set<String> _selectedSuspectIds = <String>{};
   final TextEditingController _chatController = TextEditingController();
+  Timer? _countdownTicker;
 
   @override
   void dispose() {
+    _countdownTicker?.cancel();
     _chatController.dispose();
     super.dispose();
   }
@@ -41,6 +46,7 @@ class _MultiplayerRoomScreenState extends ConsumerState<MultiplayerRoomScreen> {
     final settings = ref.watch(appSettingsProvider);
     ref.watch(topicTranslationsProvider);
     final room = roomAsync.asData?.value;
+    _syncCountdownTicker(room);
     warmUiPhrases(
       ref,
       [
@@ -87,6 +93,8 @@ class _MultiplayerRoomScreenState extends ConsumerState<MultiplayerRoomScreen> {
         'إلغاء',
         'تأكيد الحظر',
         'المتهمون حاليًا',
+        'الوقت المتبقي',
+        'ث',
         if (room != null) room.round.statusLine,
       ],
     );
@@ -128,6 +136,9 @@ class _MultiplayerRoomScreenState extends ConsumerState<MultiplayerRoomScreen> {
               locale: settings.locale,
             ),
         };
+        final outsiderGuessRemainingSeconds = room.round.phase == MultiplayerRoomPhase.outsiderGuess
+            ? _remainingGuessSeconds(room.round.phaseEndsAt)
+            : null;
 
         return BaraScaffold(
           title: '${localizeUiPhrase(ref, 'الغرفة')} ${room.roomCode}',
@@ -166,6 +177,12 @@ class _MultiplayerRoomScreenState extends ConsumerState<MultiplayerRoomScreen> {
                             '${localizeUiPhrase(ref, 'عدد برا السالفة')}: ${room.outsiderCount}',
                           ),
                         ),
+                        if (outsiderGuessRemainingSeconds != null)
+                          Chip(
+                            label: Text(
+                              '${localizeUiPhrase(ref, 'الوقت المتبقي')}: $outsiderGuessRemainingSeconds ${localizeUiPhrase(ref, 'ث')}',
+                            ),
+                          ),
                       ],
                     ),
                   ],
@@ -278,6 +295,7 @@ class _MultiplayerRoomScreenState extends ConsumerState<MultiplayerRoomScreen> {
               _PhaseActionCard(
                 room: room,
                 localizedGuessOptions: localizedGuessOptions,
+                outsiderGuessRemainingSeconds: outsiderGuessRemainingSeconds,
                 selectedGuess: _selectedGuess,
                 selectedSuspectIds: _selectedSuspectIds,
                 onGuessSelected: (value) => setState(() => _selectedGuess = value),
@@ -465,12 +483,41 @@ class _MultiplayerRoomScreenState extends ConsumerState<MultiplayerRoomScreen> {
           locale: locale,
         );
   }
+
+  int _remainingGuessSeconds(DateTime? phaseEndsAt) {
+    if (phaseEndsAt == null) {
+      return _outsiderGuessSeconds;
+    }
+    final seconds = phaseEndsAt.difference(DateTime.now()).inSeconds;
+    return seconds.clamp(0, _outsiderGuessSeconds);
+  }
+
+  void _syncCountdownTicker(MultiplayerRoomState? room) {
+    final shouldTick = room?.round.phase == MultiplayerRoomPhase.outsiderGuess;
+    if (!shouldTick) {
+      _countdownTicker?.cancel();
+      _countdownTicker = null;
+      return;
+    }
+    if (_countdownTicker != null) {
+      return;
+    }
+    _countdownTicker = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) {
+        _countdownTicker?.cancel();
+        _countdownTicker = null;
+        return;
+      }
+      setState(() {});
+    });
+  }
 }
 
 class _PhaseActionCard extends ConsumerWidget {
   const _PhaseActionCard({
     required this.room,
     required this.localizedGuessOptions,
+    required this.outsiderGuessRemainingSeconds,
     required this.selectedGuess,
     required this.selectedSuspectIds,
     required this.onGuessSelected,
@@ -482,6 +529,7 @@ class _PhaseActionCard extends ConsumerWidget {
 
   final MultiplayerRoomState room;
   final Map<String, String> localizedGuessOptions;
+  final int? outsiderGuessRemainingSeconds;
   final String? selectedGuess;
   final Set<String> selectedSuspectIds;
   final ValueChanged<String> onGuessSelected;
@@ -546,6 +594,13 @@ class _PhaseActionCard extends ConsumerWidget {
           ] else if (phase == MultiplayerRoomPhase.outsiderGuess &&
               room.privateView.guessOptions.isNotEmpty) ...[
             Text(localizeUiPhrase(ref, 'أنت وحدك ترى هذه الخيارات على هاتفك.')),
+            if (outsiderGuessRemainingSeconds != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                '${localizeUiPhrase(ref, 'الوقت المتبقي')}: $outsiderGuessRemainingSeconds ${localizeUiPhrase(ref, 'ث')}',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ],
             const SizedBox(height: 12),
             Wrap(
               spacing: 10,
