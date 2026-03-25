@@ -11,18 +11,18 @@ void main() {
       6,
       (index) => PlayerProfile(
         id: 'p$index',
-        name: 'لاعب ${index + 1}',
+        name: 'Player ${index + 1}',
         avatarIndex: index,
         score: 0,
       ),
     );
     const pack = CategoryPack(
       id: 'test',
-      title: 'اختبار',
+      title: 'Test',
       subtitle: 'pack',
-      difficultyLabel: 'سهل',
+      difficultyLabel: 'Easy',
       isPremium: false,
-      topics: ['الجزائر', 'فرنسا', 'مصر', 'اليابان', 'الصين', 'البرازيل'],
+      topics: ['Algeria', 'France', 'Egypt', 'Japan', 'China', 'Brazil'],
     );
 
     test('creates requested number of outsiders', () {
@@ -44,7 +44,7 @@ void main() {
       final outcome = engine.resolveRound(
         players: players,
         outsiderIds: const ['p0', 'p4'],
-        topic: 'الجزائر',
+        topic: 'Algeria',
         topicPool: pack.topics,
         votes: const {
           'p0': ['p1', 'p2'],
@@ -68,12 +68,12 @@ void main() {
       expect(outcome.outsiderGuessOptions, hasLength(pack.topics.length));
     });
 
-    test('each surviving outsider guess adds its own final point swing', () {
+    test('each outsider guess adds its own final point swing', () {
       final engine = GameEngine(random: Random(5));
       final outcome = engine.resolveRound(
         players: players,
         outsiderIds: const ['p2', 'p5'],
-        topic: 'مصر',
+        topic: 'Egypt',
         topicPool: pack.topics,
         votes: const {
           'p0': ['p2', 'p0'],
@@ -87,15 +87,23 @@ void main() {
 
       expect(outcome.survivingOutsiderIds, const ['p5']);
 
-      final finalized = engine.finalizeOutsiderGuess(
+      final firstFinalized = engine.finalizeOutsiderGuess(
         outcome: outcome,
+        outsiderId: 'p2',
+        guessedTopic: 'Egypt',
+      );
+      final finalized = engine.finalizeOutsiderGuess(
+        outcome: firstFinalized,
         outsiderId: 'p5',
-        guessedTopic: 'اليابان',
+        guessedTopic: 'Japan',
       );
 
+      expect(firstFinalized.outsiderGuessResults['p2'], isTrue);
+      expect(firstFinalized.scoreDeltas['p2'], 1);
       expect(finalized.outsiderGuessResults['p5'], isFalse);
       expect(finalized.scoreDeltas['p5'], -1);
-      expect(finalized.outsiderGuessOptions, contains('مصر'));
+      expect(finalized.scoreDeltas['p2'], 1);
+      expect(finalized.outsiderGuessOptions, contains('Egypt'));
     });
   });
 }

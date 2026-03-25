@@ -266,7 +266,7 @@ class FakeMultiplayerRoomRepository implements MultiplayerRoomRepository {
       MultiplayerRoomPhase.discussion => MultiplayerRoomPhase.voting,
       MultiplayerRoomPhase.voting => MultiplayerRoomPhase.voteReveal,
       MultiplayerRoomPhase.voteReveal =>
-        round.outsiderSurvived ? MultiplayerRoomPhase.outsiderGuess : MultiplayerRoomPhase.results,
+        round.outsiderIds.isNotEmpty ? MultiplayerRoomPhase.outsiderGuess : MultiplayerRoomPhase.results,
       MultiplayerRoomPhase.outsiderGuess => MultiplayerRoomPhase.results,
       MultiplayerRoomPhase.results => MultiplayerRoomPhase.results,
     };
@@ -274,6 +274,9 @@ class FakeMultiplayerRoomRepository implements MultiplayerRoomRepository {
     final updated = room.copyWith(
       round: round.copyWith(
         phase: nextPhase,
+        activePlayerId: nextPhase == MultiplayerRoomPhase.outsiderGuess
+            ? (round.outsiderIds.isEmpty ? null : round.outsiderIds.first)
+            : round.activePlayerId,
         phaseEndsAt: DateTime.now().add(const Duration(seconds: 30)),
         statusLine: _statusLineForPhase(nextPhase),
       ),
@@ -353,7 +356,7 @@ class FakeMultiplayerRoomRepository implements MultiplayerRoomRepository {
         else
           player,
     ];
-    final remainingGuessers = room.round.survivingOutsiderIds
+    final remainingGuessers = room.round.outsiderIds
         .where((outsiderId) => !guesses.containsKey(outsiderId))
         .toList(growable: false);
 
@@ -365,6 +368,9 @@ class FakeMultiplayerRoomRepository implements MultiplayerRoomRepository {
       round: room.round.copyWith(
         phase: nextPhase,
         activePlayerId: remainingGuessers.isEmpty ? null : remainingGuessers.first,
+        phaseEndsAt: remainingGuessers.isEmpty
+            ? null
+            : DateTime.now().add(const Duration(seconds: 20)),
         statusLine: remainingGuessers.isEmpty
             ? 'تم إنهاء الجولة وإرسال النقاط للجميع.'
             : 'انتقل التخمين الآن إلى برا السالفة التالي.',
@@ -574,7 +580,7 @@ class FakeMultiplayerRoomRepository implements MultiplayerRoomRepository {
     final votes = _roomVotes[room.roomId] ?? const <String, List<String>>{};
     final canGuessNow = room.round.phase == MultiplayerRoomPhase.outsiderGuess &&
         room.round.activePlayerId == currentPlayerId &&
-        room.round.survivingOutsiderIds.contains(currentPlayerId);
+        room.round.outsiderIds.contains(currentPlayerId);
 
     return room.copyWith(
       currentPlayerId: currentPlayerId,

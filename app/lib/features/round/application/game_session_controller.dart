@@ -125,11 +125,11 @@ class GameSessionState {
   }
 
   PlayerProfile? get currentOutsiderGuesser {
-    final remainingOutsiders = outcome?.survivingOutsiderIds ?? outsiderIds;
-    if (outsiderGuessIndex >= remainingOutsiders.length) {
+    final guessQueue = outcome?.outsiderIds ?? outsiderIds;
+    if (outsiderGuessIndex >= guessQueue.length) {
       return null;
     }
-    return players.firstWhereOrNull((player) => player.id == remainingOutsiders[outsiderGuessIndex]);
+    return players.firstWhereOrNull((player) => player.id == guessQueue[outsiderGuessIndex]);
   }
 
   List<PlayerProfile> get outsiderPlayers {
@@ -370,7 +370,7 @@ class GameSessionController extends Notifier<GameSessionState> {
     if (state.phase != RoundPhase.suspense || state.outcome == null) {
       return;
     }
-    if (state.outcome!.survivingOutsiderIds.isEmpty) {
+    if (state.outcome!.outsiderIds.isEmpty) {
       final updatedPlayers = state.scoringEnabled
           ? _engine.applyOutcome(players: state.players, outcome: state.outcome!)
           : state.players;
@@ -398,8 +398,8 @@ class GameSessionController extends Notifier<GameSessionState> {
       outsiderId: outsider.id,
       guessedTopic: guessedTopic,
     );
-    final survivingOutsiders = finalized.survivingOutsiderIds;
-    final isLastOutsider = state.outsiderGuessIndex >= survivingOutsiders.length - 1;
+    final allOutsiders = finalized.outsiderIds;
+    final isLastOutsider = state.outsiderGuessIndex >= allOutsiders.length - 1;
 
     if (!isLastOutsider) {
       state = state.copyWith(

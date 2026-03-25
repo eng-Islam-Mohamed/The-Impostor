@@ -592,7 +592,7 @@ class _RoundScreenState extends ConsumerState<RoundScreen> {
     if (outsider == null || outcome == null) {
       return const SizedBox.shrink();
     }
-    final survivingOutsiderCount = outcome.survivingOutsiderIds.length;
+    final totalOutsiderCount = outcome.outsiderIds.length;
     final remaining = _outsiderRemainingSeconds ?? _outsiderGuessSeconds;
 
     return Column(
@@ -641,7 +641,7 @@ class _RoundScreenState extends ConsumerState<RoundScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              '${AppLocalizations.of(context).youAreOutsider} ${session.outsiderGuessIndex + 1}/$survivingOutsiderCount: ${outsider.name}',
+                              '${AppLocalizations.of(context).youAreOutsider} ${session.outsiderGuessIndex + 1}/$totalOutsiderCount: ${outsider.name}',
                               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                                     color: Colors.white,
                                   ),

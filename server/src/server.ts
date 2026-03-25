@@ -432,11 +432,11 @@ function advancePhase(room: ServerRoom): void {
       resolveVotes(room);
       break;
     case 'voteReveal':
-      if (room.round.survivingOutsiderIds.length > 0) {
+      if (room.round.outsiderIds.length > 0) {
         room.round.phase = 'outsiderGuess';
-        room.round.activePlayerId = room.round.survivingOutsiderIds.find(
+        room.round.activePlayerId = room.round.outsiderIds.find(
           (outsiderId) => !room.round.guessedTopicByPlayer[outsiderId],
-        ) ?? room.round.survivingOutsiderIds[0];
+        ) ?? room.round.outsiderIds[0];
         room.round.statusLine = 'الهاتف الخاص ببرا السالفة الناجي وحده يستقبل شاشة التخمين الآن.';
         room.round.phaseEndsAt = secondsFromNow(outsiderGuessSeconds);
       } else {
@@ -447,7 +447,7 @@ function advancePhase(room: ServerRoom): void {
       }
       break;
     case 'outsiderGuess': {
-      const remaining = room.round.survivingOutsiderIds.filter(
+      const remaining = room.round.outsiderIds.filter(
         (outsiderId) => !room.round.guessedTopicByPlayer[outsiderId],
       );
       if (remaining.length > 0) {
@@ -538,8 +538,8 @@ function submitOutsiderGuess(room: ServerRoom, playerId: string, guessedTopic: s
   if (room.round.phase !== 'outsiderGuess') {
     throw new Error('Outsider guess phase is not open.');
   }
-  if (room.round.activePlayerId !== playerId || !room.round.survivingOutsiderIds.includes(playerId)) {
-    throw new Error('Only the active surviving outsider may guess.');
+  if (room.round.activePlayerId !== playerId || !room.round.outsiderIds.includes(playerId)) {
+    throw new Error('Only the active outsider may guess.');
   }
   const isCorrect = guessedTopic === room.round.topic;
   room.round.guessedTopicByPlayer[playerId] =
@@ -547,7 +547,7 @@ function submitOutsiderGuess(room: ServerRoom, playerId: string, guessedTopic: s
   applyScoreDeltas(room, {
     [playerId]: isCorrect ? 1 : -1,
   });
-  const remainingGuessers = room.round.survivingOutsiderIds.filter(
+  const remainingGuessers = room.round.outsiderIds.filter(
     (outsiderId) => !room.round.guessedTopicByPlayer[outsiderId],
   );
   if (remainingGuessers.length > 0) {
@@ -707,7 +707,7 @@ function buildRoomView(room: ServerRoom, playerId: string) {
   const canGuessNow =
     room.round.phase === 'outsiderGuess' &&
     room.round.activePlayerId === playerId &&
-    room.round.survivingOutsiderIds.includes(playerId);
+    room.round.outsiderIds.includes(playerId);
   return {
     roomId: room.roomId,
     roomCode: room.roomCode,
