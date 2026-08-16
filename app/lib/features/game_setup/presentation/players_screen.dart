@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:bara_alsalfa/core/i18n/game_text.dart';
 import 'package:bara_alsalfa/core/i18n/ui_phrase_localizer.dart';
 import 'package:bara_alsalfa/core/widgets/bara_button.dart';
@@ -494,46 +492,22 @@ class _SecretPlayersTitle extends StatefulWidget {
 }
 
 class _SecretPlayersTitleState extends State<_SecretPlayersTitle> {
-  Timer? _holdTimer;
-  DateTime? _armedUntil;
+  DateTime? _firstTapAt;
   int _tapCount = 0;
-  bool _ignoreReleaseTap = false;
-
-  @override
-  void dispose() {
-    _holdTimer?.cancel();
-    super.dispose();
-  }
-
-  void _startHold() {
-    _holdTimer?.cancel();
-    _holdTimer = Timer(const Duration(seconds: 4), () {
-      _armedUntil = DateTime.now().add(const Duration(seconds: 6));
-      _tapCount = 0;
-      _ignoreReleaseTap = true;
-    });
-  }
-
-  void _endHold() {
-    _holdTimer?.cancel();
-    _holdTimer = null;
-  }
 
   void _registerTap() {
-    if (_ignoreReleaseTap) {
-      _ignoreReleaseTap = false;
-      return;
+    final now = DateTime.now();
+    final firstTapAt = _firstTapAt;
+    if (firstTapAt == null ||
+        now.difference(firstTapAt) > const Duration(seconds: 4)) {
+      _firstTapAt = now;
+      _tapCount = 1;
+    } else {
+      _tapCount++;
     }
-    final deadline = _armedUntil;
-    if (deadline == null || DateTime.now().isAfter(deadline)) {
-      _tapCount = 0;
-      _armedUntil = null;
-      return;
-    }
-    _tapCount++;
-    if (_tapCount < 3) return;
+    if (_tapCount < 5) return;
     _tapCount = 0;
-    _armedUntil = null;
+    _firstTapAt = null;
     widget.onUnlocked();
   }
 
@@ -542,14 +516,9 @@ class _SecretPlayersTitleState extends State<_SecretPlayersTitle> {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: _registerTap,
-      child: Listener(
-        onPointerDown: (_) => _startHold(),
-        onPointerUp: (_) => _endHold(),
-        onPointerCancel: (_) => _endHold(),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          child: Text(widget.title),
-        ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        child: Text(widget.title),
       ),
     );
   }
