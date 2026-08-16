@@ -18,16 +18,20 @@ class AppAudio {
     await _invoke('setEnabled', {'enabled': enabled});
   }
 
-  Future<void> playSoftTap() => _enabled ? _invoke('playSoftTap') : Future.value();
+  Future<void> playSoftTap() =>
+      _enabled ? _invoke('playSoftTap') : Future.value();
 
-  Future<void> playVoteConfirm() => _enabled ? _invoke('playVoteConfirm') : Future.value();
+  Future<void> playVoteConfirm() =>
+      _enabled ? _invoke('playVoteConfirm') : Future.value();
 
   Future<void> playSuspenseReveal() =>
       _enabled ? _invoke('playSuspenseReveal') : Future.value();
 
-  Future<void> playCorrectGuess() => _enabled ? _invoke('playCorrectGuess') : Future.value();
+  Future<void> playCorrectGuess() =>
+      _enabled ? _invoke('playCorrectGuess') : Future.value();
 
-  Future<void> playWrongGuess() => _enabled ? _invoke('playWrongGuess') : Future.value();
+  Future<void> playWrongGuess() =>
+      _enabled ? _invoke('playWrongGuess') : Future.value();
 
   Future<void> _invoke(String method, [Map<String, Object?>? arguments]) async {
     try {

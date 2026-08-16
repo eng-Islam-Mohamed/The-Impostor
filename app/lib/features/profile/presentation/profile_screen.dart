@@ -74,6 +74,32 @@ class ProfileScreen extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
+                  'ثيم اللعبة',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'اختر هوية بصرية مختلفة لكل جلسة لعب.',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.7),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                _ThemeSelector(
+                  currentTheme: settings.visualTheme,
+                  onThemeChanged: controller.setVisualTheme,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 18),
+          GlowCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
                   l10n.language,
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
@@ -81,11 +107,10 @@ class ProfileScreen extends ConsumerWidget {
                 Text(
                   l10n.languageSubtitle,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .onSurface
-                            .withValues(alpha: 0.7),
-                      ),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.7),
+                  ),
                 ),
                 const SizedBox(height: 12),
                 _LanguageSelector(
@@ -152,18 +177,112 @@ class ProfileScreen extends ConsumerWidget {
   }
 
   Future<void> _launchLink(
-      BuildContext context, Uri uri, AppLocalizations l10n) async {
-    final launched =
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
+    BuildContext context,
+    Uri uri,
+    AppLocalizations l10n,
+  ) async {
+    final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (!context.mounted || launched) {
       return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(l10n.openLinkError),
-      ),
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(l10n.openLinkError)));
+  }
+}
+
+class _ThemeSelector extends StatelessWidget {
+  const _ThemeSelector({
+    required this.currentTheme,
+    required this.onThemeChanged,
+  });
+
+  final AppVisualTheme currentTheme;
+  final void Function(AppVisualTheme) onThemeChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 10,
+      runSpacing: 10,
+      children: AppVisualTheme.values.map((theme) {
+        final isSelected = theme == currentTheme;
+        final colors = _themeSwatches(theme);
+        return ChoiceChip(
+          label: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (final color in colors)
+                Container(
+                  width: 12,
+                  height: 12,
+                  margin: const EdgeInsetsDirectional.only(end: 4),
+                  decoration: BoxDecoration(
+                    color: color,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              Text(theme.localizedTitle),
+            ],
+          ),
+          selected: isSelected,
+          onSelected: (_) => onThemeChanged(theme),
+          selectedColor: Theme.of(context).colorScheme.primary,
+          labelStyle: TextStyle(
+            color: isSelected
+                ? Theme.of(context).colorScheme.onPrimary
+                : Theme.of(context).colorScheme.onSurface,
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+          ),
+        );
+      }).toList(),
     );
+  }
+
+  List<Color> _themeSwatches(AppVisualTheme theme) {
+    return switch (theme) {
+      AppVisualTheme.emeraldLounge => const [
+        Color(0xFF0F8F78),
+        Color(0xFFF06A5F),
+        Color(0xFFD6B36E),
+      ],
+      AppVisualTheme.royalNoir => const [
+        Color(0xFF7552A8),
+        Color(0xFFE15F68),
+        Color(0xFFE8C77A),
+      ],
+      AppVisualTheme.midnightCoral => const [
+        Color(0xFF1C7FA0),
+        Color(0xFFFF6F61),
+        Color(0xFFFFC857),
+      ],
+      AppVisualTheme.pearlMajlis => const [
+        Color(0xFFB06A2D),
+        Color(0xFF2F8F83),
+        Color(0xFFC94E5A),
+      ],
+      AppVisualTheme.neonSouk => const [
+        Color(0xFFFF5FB7),
+        Color(0xFF00D6C8),
+        Color(0xFFFFC857),
+      ],
+      AppVisualTheme.candyChaos => const [
+        Color(0xFFFF6B9A),
+        Color(0xFF7AE582),
+        Color(0xFFFFBE3D),
+      ],
+      AppVisualTheme.desertArcade => const [
+        Color(0xFFF28C28),
+        Color(0xFF2DD4BF),
+        Color(0xFFEE4266),
+      ],
+      AppVisualTheme.oceanMajlis => const [
+        Color(0xFF0891B2),
+        Color(0xFFFF7A59),
+        Color(0xFFA7F3D0),
+      ],
+    };
   }
 }
 
@@ -217,15 +336,9 @@ class _SocialTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListTile(
       contentPadding: EdgeInsets.zero,
-      leading: CircleAvatar(
-        radius: 22,
-        child: Icon(icon),
-      ),
+      leading: CircleAvatar(radius: 22, child: Icon(icon)),
       title: Text(title),
-      subtitle: Text(
-        subtitle,
-        textDirection: TextDirection.ltr,
-      ),
+      subtitle: Text(subtitle, textDirection: TextDirection.ltr),
       trailing: const Icon(Icons.open_in_new_rounded),
       onTap: onTap,
     );

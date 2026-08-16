@@ -18,10 +18,12 @@ class MultiplayerLobbyScreen extends ConsumerStatefulWidget {
   static const routePath = '/multiplayer/lobby';
 
   @override
-  ConsumerState<MultiplayerLobbyScreen> createState() => _MultiplayerLobbyScreenState();
+  ConsumerState<MultiplayerLobbyScreen> createState() =>
+      _MultiplayerLobbyScreenState();
 }
 
-class _MultiplayerLobbyScreenState extends ConsumerState<MultiplayerLobbyScreen> {
+class _MultiplayerLobbyScreenState
+    extends ConsumerState<MultiplayerLobbyScreen> {
   final TextEditingController _chatController = TextEditingController();
 
   @override
@@ -37,9 +39,12 @@ class _MultiplayerLobbyScreenState extends ConsumerState<MultiplayerLobbyScreen>
       if (!mounted || nextRoom == null) {
         return;
       }
-      final phaseStarted = nextRoom.status == MultiplayerRoomStatus.inProgress &&
+      final phaseStarted =
+          nextRoom.status == MultiplayerRoomStatus.inProgress &&
           nextRoom.round.phase != MultiplayerRoomPhase.lobby;
-      if (phaseStarted && GoRouterState.of(context).uri.toString() != MultiplayerRoomScreen.routePath) {
+      if (phaseStarted &&
+          GoRouterState.of(context).uri.toString() !=
+              MultiplayerRoomScreen.routePath) {
         context.go(MultiplayerRoomScreen.routePath);
       }
     });
@@ -47,37 +52,34 @@ class _MultiplayerLobbyScreenState extends ConsumerState<MultiplayerLobbyScreen>
     final roomAsync = ref.watch(multiplayerRoomProvider);
     final room = roomAsync.asData?.value;
 
-    warmUiPhrases(
-      ref,
-      [
-        'الردهة',
-        'العودة للغرف الأونلاين',
-        'ردهة الغرفة',
-        'الكود',
-        'رابط الدعوة',
-        'اللاعبون',
-        'جاهز',
-        'بانتظار',
-        'ما يختبره هذا النموذج',
-        'الجاهزية لكل لاعب من هاتفه',
-        'صلاحيات المضيف',
-        'الانتقال من الردهة إلى الجولة مع معلومات خاصة لكل لاعب',
-        'إلغاء الجاهزية',
-        'أنا جاهز',
-        'ملء الغرفة بلاعبين تجريبيين',
-        'ابدأ الجولة الحية',
-        'غادر الغرفة',
-        'جاري إعداد الردهة',
-        'Host',
-        'عدد برا السالفة',
-        'الحد الأدنى لهذا الوضع',
-        'احظر اللاعب',
-        'هل تريد حظر هذا اللاعب من الغرفة؟',
-        'إلغاء',
-        'تأكيد الحظر',
-        if (room != null) room.systemMessage,
-      ],
-    );
+    warmUiPhrases(ref, [
+      'الردهة',
+      'العودة للغرف الأونلاين',
+      'ردهة الغرفة',
+      'الكود',
+      'رابط الدعوة',
+      'اللاعبون',
+      'جاهز',
+      'بانتظار',
+      'ما يختبره هذا النموذج',
+      'الجاهزية لكل لاعب من هاتفه',
+      'صلاحيات المضيف',
+      'الانتقال من الردهة إلى الجولة مع معلومات خاصة لكل لاعب',
+      'إلغاء الجاهزية',
+      'أنا جاهز',
+      'ملء الغرفة بلاعبين تجريبيين',
+      'ابدأ الجولة الحية',
+      'غادر الغرفة',
+      'جاري إعداد الردهة',
+      'Host',
+      'عدد برا السالفة',
+      'الحد الأدنى لهذا الوضع',
+      'احظر اللاعب',
+      'هل تريد حظر هذا اللاعب من الغرفة؟',
+      'إلغاء',
+      'تأكيد الحظر',
+      if (room != null) room.systemMessage,
+    ]);
 
     return roomAsync.when(
       data: (room) {
@@ -119,7 +121,9 @@ class _MultiplayerLobbyScreenState extends ConsumerState<MultiplayerLobbyScreen>
                     const SizedBox(height: 8),
                     Text(localizeUiPhrase(ref, room.systemMessage)),
                     const SizedBox(height: 8),
-                    Text('${localizeUiPhrase(ref, 'رابط الدعوة')}: ${room.shareLink}'),
+                    Text(
+                      '${localizeUiPhrase(ref, 'رابط الدعوة')}: ${room.shareLink}',
+                    ),
                     const SizedBox(height: 12),
                     Wrap(
                       spacing: 10,
@@ -165,7 +169,9 @@ class _MultiplayerLobbyScreenState extends ConsumerState<MultiplayerLobbyScreen>
                             if (player.isHost)
                               Padding(
                                 padding: const EdgeInsets.only(left: 8),
-                                child: Chip(label: Text(localizeUiPhrase(ref, 'Host'))),
+                                child: Chip(
+                                  label: Text(localizeUiPhrase(ref, 'Host')),
+                                ),
                               ),
                             Chip(
                               label: Text(
@@ -174,7 +180,8 @@ class _MultiplayerLobbyScreenState extends ConsumerState<MultiplayerLobbyScreen>
                                     : localizeUiPhrase(ref, 'بانتظار'),
                               ),
                             ),
-                            if (room.isCurrentPlayerHost && player.id != room.currentPlayerId)
+                            if (room.isCurrentPlayerHost &&
+                                player.id != room.currentPlayerId)
                               IconButton(
                                 onPressed: () => _confirmBan(player),
                                 icon: const Icon(Icons.block_rounded),
@@ -194,11 +201,15 @@ class _MultiplayerLobbyScreenState extends ConsumerState<MultiplayerLobbyScreen>
                   children: [
                     Text(localizeUiPhrase(ref, 'ما يختبره هذا النموذج')),
                     const SizedBox(height: 10),
-                    Text('• ${localizeUiPhrase(ref, 'الجاهزية لكل لاعب من هاتفه')}'),
+                    Text(
+                      '• ${localizeUiPhrase(ref, 'الجاهزية لكل لاعب من هاتفه')}',
+                    ),
                     const SizedBox(height: 6),
                     Text('• ${localizeUiPhrase(ref, 'صلاحيات المضيف')}'),
                     const SizedBox(height: 6),
-                    Text('• ${localizeUiPhrase(ref, 'الانتقال من الردهة إلى الجولة مع معلومات خاصة لكل لاعب')}'),
+                    Text(
+                      '• ${localizeUiPhrase(ref, 'الانتقال من الردهة إلى الجولة مع معلومات خاصة لكل لاعب')}',
+                    ),
                   ],
                 ),
               ),
@@ -214,7 +225,8 @@ class _MultiplayerLobbyScreenState extends ConsumerState<MultiplayerLobbyScreen>
                     ? localizeUiPhrase(ref, 'إلغاء الجاهزية')
                     : localizeUiPhrase(ref, 'أنا جاهز'),
                 icon: Icons.check_circle_outline_rounded,
-                onPressed: () => ref.read(multiplayerRoomProvider.notifier).toggleReady(),
+                onPressed: () =>
+                    ref.read(multiplayerRoomProvider.notifier).toggleReady(),
               ),
               if (room.isCurrentPlayerHost) ...[
                 const SizedBox(height: 12),
@@ -223,14 +235,18 @@ class _MultiplayerLobbyScreenState extends ConsumerState<MultiplayerLobbyScreen>
                   icon: Icons.group_add_rounded,
                   onPressed: room.players.length >= room.maxPlayers
                       ? null
-                      : () => ref.read(multiplayerRoomProvider.notifier).seedDemoPlayers(),
+                      : () => ref
+                            .read(multiplayerRoomProvider.notifier)
+                            .seedDemoPlayers(),
                 ),
                 const SizedBox(height: 12),
                 BaraButton.primary(
                   label: localizeUiPhrase(ref, 'ابدأ الجولة الحية'),
                   icon: Icons.play_arrow_rounded,
                   onPressed: room.canStart
-                      ? () => ref.read(multiplayerRoomProvider.notifier).startGame()
+                      ? () => ref
+                            .read(multiplayerRoomProvider.notifier)
+                            .startGame()
                       : null,
                 ),
               ],
@@ -250,7 +266,9 @@ class _MultiplayerLobbyScreenState extends ConsumerState<MultiplayerLobbyScreen>
           ),
         );
       },
-      loading: () => _MultiplayerLoadingScreen(title: localizeUiPhrase(ref, 'جاري إعداد الردهة')),
+      loading: () => _MultiplayerLoadingScreen(
+        title: localizeUiPhrase(ref, 'جاري إعداد الردهة'),
+      ),
       error: (error, _) => BaraScaffold(
         title: localizeUiPhrase(ref, 'الردهة'),
         showBackButton: true,
@@ -260,7 +278,10 @@ class _MultiplayerLobbyScreenState extends ConsumerState<MultiplayerLobbyScreen>
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(localizeUiPhrase(ref, '$error'), textAlign: TextAlign.center),
+                Text(
+                  localizeUiPhrase(ref, '$error'),
+                  textAlign: TextAlign.center,
+                ),
                 const SizedBox(height: 16),
                 BaraButton.primary(
                   label: localizeUiPhrase(ref, 'العودة للغرف الأونلاين'),
@@ -276,7 +297,8 @@ class _MultiplayerLobbyScreenState extends ConsumerState<MultiplayerLobbyScreen>
   }
 
   Future<void> _confirmBan(MultiplayerPlayer player) async {
-    final shouldBan = await showDialog<bool>(
+    final shouldBan =
+        await showDialog<bool>(
           context: context,
           builder: (context) {
             return AlertDialog(
@@ -327,9 +349,7 @@ class _MultiplayerLoadingScreen extends StatelessWidget {
     return BaraScaffold(
       title: title,
       showBackButton: true,
-      child: const Center(
-        child: CircularProgressIndicator(),
-      ),
+      child: const Center(child: CircularProgressIndicator()),
     );
   }
 }

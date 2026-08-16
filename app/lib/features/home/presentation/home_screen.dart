@@ -8,10 +8,12 @@ import 'package:bara_alsalfa/data/repositories/local_category_repository.dart';
 import 'package:bara_alsalfa/domain/models/game_mode.dart';
 import 'package:bara_alsalfa/features/game_setup/presentation/manage_subjects_screen.dart';
 import 'package:bara_alsalfa/features/game_setup/presentation/setup_screen.dart';
+import 'package:bara_alsalfa/features/groups/presentation/saved_groups_screen.dart';
 import 'package:bara_alsalfa/features/multiplayer/presentation/multiplayer_hub_screen.dart';
 import 'package:bara_alsalfa/features/profile/presentation/profile_screen.dart';
 import 'package:bara_alsalfa/features/profile/presentation/settings_controller.dart';
 import 'package:bara_alsalfa/features/round/application/game_session_controller.dart';
+import 'package:bara_alsalfa/features/round/presentation/round_screen.dart';
 import 'package:bara_alsalfa/features/stats/presentation/stats_screen.dart';
 import 'package:bara_alsalfa/features/store/presentation/store_screen.dart';
 import 'package:flutter/material.dart';
@@ -32,11 +34,17 @@ class HomeScreen extends ConsumerWidget {
     ref.watch(topicTranslationsProvider);
     warmUiPhrases(ref, const ['غرفة أونلاين']);
     final l10n = AppLocalizations.of(context);
+    warmUiPhrases(ref, const [
+      'متابعة الجلسة',
+      'الجولة',
+      'اضغط لبدء جولة جديدة بنفس اللاعبين والنقاط.',
+    ]);
 
     return BaraScaffold(
       actions: [
         IconButton(
-          onPressed: () => ref.read(appSettingsProvider.notifier).toggleThemeMode(),
+          onPressed: () =>
+              ref.read(appSettingsProvider.notifier).toggleThemeMode(),
           icon: Icon(
             settings.themeMode == ThemeMode.dark
                 ? Icons.light_mode_rounded
@@ -60,10 +68,22 @@ class HomeScreen extends ConsumerWidget {
           }
         },
         destinations: [
-          NavigationDestination(icon: const Icon(Icons.home_rounded), label: l10n.home),
-          NavigationDestination(icon: const Icon(Icons.auto_awesome_rounded), label: l10n.store),
-          NavigationDestination(icon: const Icon(Icons.insights_rounded), label: l10n.statistics),
-          NavigationDestination(icon: const Icon(Icons.tune_rounded), label: l10n.settings),
+          NavigationDestination(
+            icon: const Icon(Icons.home_rounded),
+            label: l10n.home,
+          ),
+          NavigationDestination(
+            icon: const Icon(Icons.auto_awesome_rounded),
+            label: l10n.store,
+          ),
+          NavigationDestination(
+            icon: const Icon(Icons.insights_rounded),
+            label: l10n.statistics,
+          ),
+          NavigationDestination(
+            icon: const Icon(Icons.tune_rounded),
+            label: l10n.settings,
+          ),
         ],
       ),
       child: ListView(
@@ -71,18 +91,77 @@ class HomeScreen extends ConsumerWidget {
         children: [
           Text(
             l10n.appTitle,
-            style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.displayMedium?.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 10),
           Text(
             l10n.appTagline,
             style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                ),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.7),
+            ),
           ),
           const SizedBox(height: 24),
+          if (session.hasSavedSession && session.players.isNotEmpty) ...[
+            GlowCard(
+              onTap: () async {
+                await ref.read(gameSessionProvider.notifier).startRound();
+                if (!context.mounted) {
+                  return;
+                }
+                context.go(RoundScreen.routePath);
+              },
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.history_rounded,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          localizeUiPhrase(ref, 'متابعة الجلسة'),
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                      ),
+                      Text(
+                        '${localizeUiPhrase(ref, 'الجولة')} ${session.roundNumber}',
+                        style: Theme.of(context).textTheme.labelLarge,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    localizeUiPhrase(
+                      ref,
+                      'اضغط لبدء جولة جديدة بنفس اللاعبين والنقاط.',
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      for (final player in session.players)
+                        Chip(
+                          avatar: CircleAvatar(
+                            child: Text('${player.avatarIndex + 1}'),
+                          ),
+                          label: Text('${player.name}  ${player.score}'),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
           GlowCard(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -108,13 +187,21 @@ class HomeScreen extends ConsumerWidget {
                 BaraButton.secondary(
                   label: l10n.quickRound,
                   icon: Icons.flash_on_rounded,
-                  onPressed: () => context.push('${SetupScreen.routePath}?mode=${GameMode.quick.slug}'),
+                  onPressed: () => context.push(
+                    '${SetupScreen.routePath}?mode=${GameMode.quick.slug}',
+                  ),
                 ),
                 const SizedBox(height: 12),
                 BaraButton.secondary(
                   label: l10n.manageStories,
                   icon: Icons.edit_note_rounded,
                   onPressed: () => context.push(ManageSubjectsScreen.routePath),
+                ),
+                const SizedBox(height: 12),
+                BaraButton.secondary(
+                  label: 'المجموعات المحفوظة',
+                  icon: Icons.groups_rounded,
+                  onPressed: () => context.push(SavedGroupsScreen.routePath),
                 ),
                 const SizedBox(height: 12),
                 BaraButton.secondary(
@@ -126,17 +213,18 @@ class HomeScreen extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 24),
-          _SectionHeader(
-            title: l10n.readyModes,
-            actionLabel: l10n.viewAll,
-          ),
+          _SectionHeader(title: l10n.readyModes, actionLabel: l10n.viewAll),
           const SizedBox(height: 12),
-          ...GameMode.values.take(3).map(
+          ...GameMode.values
+              .take(3)
+              .map(
                 (mode) => Padding(
                   padding: const EdgeInsets.only(bottom: 12),
                   child: GlowCard(
                     onTap: mode.isMvpAvailable
-                        ? () => context.push('${SetupScreen.routePath}?mode=${mode.slug}')
+                        ? () => context.push(
+                            '${SetupScreen.routePath}?mode=${mode.slug}',
+                          )
                         : null,
                     child: Row(
                       children: [
@@ -153,7 +241,13 @@ class HomeScreen extends ConsumerWidget {
                             ],
                           ),
                         ),
-                        Chip(label: Text(mode.isMvpAvailable ? mode.playerRange : l10n.comingSoon)),
+                        Chip(
+                          label: Text(
+                            mode.isMvpAvailable
+                                ? mode.playerRange
+                                : l10n.comingSoon,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -183,7 +277,10 @@ class HomeScreen extends ConsumerWidget {
                           label: Text(
                             pack.isPremium
                                 ? l10n.premium
-                                : localizedDifficultyLabel(pack, settings.locale),
+                                : localizedDifficultyLabel(
+                                    pack,
+                                    settings.locale,
+                                  ),
                           ),
                         ),
                         const SizedBox(height: 18),
@@ -217,7 +314,10 @@ class HomeScreen extends ConsumerWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(l10n.tonightChallenge, style: Theme.of(context).textTheme.titleMedium),
+                      Text(
+                        l10n.tonightChallenge,
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
                       const SizedBox(height: 6),
                       Text(l10n.tonightChallengeDesc),
                     ],
@@ -233,10 +333,7 @@ class HomeScreen extends ConsumerWidget {
 }
 
 class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({
-    required this.title,
-    required this.actionLabel,
-  });
+  const _SectionHeader({required this.title, required this.actionLabel});
 
   final String title;
   final String actionLabel;
@@ -251,8 +348,8 @@ class _SectionHeader extends StatelessWidget {
         Text(
           actionLabel,
           style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                color: Theme.of(context).colorScheme.primary,
-              ),
+            color: Theme.of(context).colorScheme.primary,
+          ),
         ),
       ],
     );

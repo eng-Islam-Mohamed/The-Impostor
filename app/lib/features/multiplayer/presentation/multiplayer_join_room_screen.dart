@@ -83,7 +83,9 @@ class _MultiplayerJoinRoomScreenState
                   runSpacing: 10,
                   children: List.generate(8, (index) {
                     return ChoiceChip(
-                      label: Text('${localizeUiPhrase(ref, 'رقم')} ${index + 1}'),
+                      label: Text(
+                        '${localizeUiPhrase(ref, 'رقم')} ${index + 1}',
+                      ),
                       selected: _avatarIndex == index,
                       onSelected: (_) => setState(() => _avatarIndex = index),
                     );
@@ -94,9 +96,7 @@ class _MultiplayerJoinRoomScreenState
           ),
           if (roomState.hasError) ...[
             const SizedBox(height: 16),
-            GlowCard(
-              child: Text(localizeUiPhrase(ref, '${roomState.error}')),
-            ),
+            GlowCard(child: Text(localizeUiPhrase(ref, '${roomState.error}'))),
           ],
           const SizedBox(height: 22),
           BaraButton.primary(
@@ -106,7 +106,9 @@ class _MultiplayerJoinRoomScreenState
               await ref
                   .read(multiplayerClientConfigProvider.notifier)
                   .setUseLiveServer(true);
-              await ref.read(multiplayerRoomProvider.notifier).joinRoom(
+              await ref
+                  .read(multiplayerRoomProvider.notifier)
+                  .joinRoom(
                     roomCode: _codeController.text.trim(),
                     displayName: _nameController.text.trim().isEmpty
                         ? localizeUiPhrase(ref, 'لاعب جديد')

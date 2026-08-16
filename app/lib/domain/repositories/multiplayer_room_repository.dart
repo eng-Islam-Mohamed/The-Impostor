@@ -23,23 +23,13 @@ abstract class MultiplayerRoomRepository {
     required int avatarIndex,
   });
 
-  Future<void> toggleReady({
-    required String roomId,
-    required String playerId,
-  });
+  Future<void> toggleReady({required String roomId, required String playerId});
 
-  Future<void> startGame({
-    required String roomId,
-    required String playerId,
-  });
+  Future<void> startGame({required String roomId, required String playerId});
 
-  Future<void> seedDemoPlayers({
-    required String roomId,
-  });
+  Future<void> seedDemoPlayers({required String roomId});
 
-  Future<void> advancePrototypePhase({
-    required String roomId,
-  });
+  Future<void> advancePrototypePhase({required String roomId});
 
   Future<void> submitVote({
     required String roomId,
@@ -53,10 +43,7 @@ abstract class MultiplayerRoomRepository {
     required String guessedTopic,
   });
 
-  Future<void> leaveRoom({
-    required String roomId,
-    required String playerId,
-  });
+  Future<void> leaveRoom({required String roomId, required String playerId});
 
   Future<void> banPlayer({
     required String roomId,

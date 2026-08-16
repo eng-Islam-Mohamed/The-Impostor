@@ -3,10 +3,12 @@ import 'package:bara_alsalfa/core/widgets/bara_button.dart';
 import 'package:bara_alsalfa/core/widgets/bara_scaffold.dart';
 import 'package:bara_alsalfa/core/widgets/glow_card.dart';
 import 'package:bara_alsalfa/core/widgets/player_avatar.dart';
+import 'package:bara_alsalfa/features/home/presentation/home_screen.dart';
 import 'package:bara_alsalfa/features/round/application/game_session_controller.dart';
 import 'package:bara_alsalfa/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 class StatsScreen extends ConsumerWidget {
   const StatsScreen({super.key});
@@ -17,16 +19,18 @@ class StatsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final players = ref.watch(gameSessionProvider).players;
     final l10n = AppLocalizations.of(context);
+    warmUiPhrases(ref, const [
+      'حذف الجلسة المحفوظة',
+      'سيتم حذف اللاعبين والنقاط وإعدادات الجلسة نهائياً.',
+      'حذف',
+    ]);
 
-    warmUiPhrases(
-      ref,
-      const [
-        'أفضل اللاعبين الليلة',
-        'تصفير النقاط',
-        'أفضل اللحظات',
-        'سيتم هنا لاحقًا حفظ أفضل الخدع، أطول نقاش، وأكثر لاعب مثير للشك.',
-      ],
-    );
+    warmUiPhrases(ref, const [
+      'أفضل اللاعبين الليلة',
+      'تصفير النقاط',
+      'أفضل اللحظات',
+      'سيتم هنا لاحقًا حفظ أفضل الخدع، أطول نقاش، وأكثر لاعب مثير للشك.',
+    ]);
 
     return BaraScaffold(
       title: l10n.statistics,
@@ -67,7 +71,14 @@ class StatsScreen extends ConsumerWidget {
                 BaraButton.secondary(
                   label: localizeUiPhrase(ref, 'تصفير النقاط'),
                   icon: Icons.refresh_rounded,
-                  onPressed: () => ref.read(gameSessionProvider.notifier).resetScores(),
+                  onPressed: () =>
+                      ref.read(gameSessionProvider.notifier).resetScores(),
+                ),
+                const SizedBox(height: 10),
+                BaraButton.secondary(
+                  label: localizeUiPhrase(ref, 'حذف الجلسة المحفوظة'),
+                  icon: Icons.delete_outline_rounded,
+                  onPressed: () => _confirmDeleteSession(context, ref),
                 ),
               ],
             ),
@@ -91,5 +102,43 @@ class StatsScreen extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  Future<void> _confirmDeleteSession(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: Text(localizeUiPhrase(ref, 'حذف الجلسة المحفوظة')),
+          content: Text(
+            localizeUiPhrase(
+              ref,
+              'سيتم حذف اللاعبين والنقاط وإعدادات الجلسة نهائياً.',
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: Text(AppLocalizations.of(dialogContext).cancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: Text(localizeUiPhrase(ref, 'حذف')),
+            ),
+          ],
+        );
+      },
+    );
+    if (shouldDelete != true || !context.mounted) {
+      return;
+    }
+
+    await ref.read(gameSessionProvider.notifier).clearSavedSession();
+    if (context.mounted) {
+      context.go(HomeScreen.routePath);
+    }
   }
 }

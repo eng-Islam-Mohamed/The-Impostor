@@ -22,29 +22,27 @@ class PlayersScreen extends ConsumerWidget {
     final mode = session.selectedMode;
     final l10n = AppLocalizations.of(context);
     final playerCountIsValid =
-        session.players.length >= mode.minPlayers && session.players.length <= mode.maxPlayers;
+        session.players.length >= mode.minPlayers &&
+        session.players.length <= mode.maxPlayers;
     final maxOutsiders = maxOutsidersForPlayerCount(session.players.length);
 
-    warmUiPhrases(
-      ref,
-      const [
-        'العدد المناسب لـ',
-        'برا السالفة الحالي',
-        'من أصل',
-        'متاح',
-        'خلط',
-        'اضغط على الصورة لتبديل الهوية البصرية.',
-        'عدد برا السالفة',
-        'يزيد تلقائيًا عندما يصبح عدد اللاعبين أكبر.',
-        'يمكنك الآن اختيار حتى',
-        'من برا السالفة.',
-        'هذا الوضع يحتاج بين',
-        'لاعبين.',
-        'التالي: اختيار الفئة',
-        'تعديل الاسم',
-        'اكتب اسم اللاعب',
-      ],
-    );
+    warmUiPhrases(ref, const [
+      'العدد المناسب لـ',
+      'برا السالفة الحالي',
+      'من أصل',
+      'متاح',
+      'خلط',
+      'اضغط على الصورة لتبديل الهوية البصرية.',
+      'عدد برا السالفة',
+      'يزيد تلقائيًا عندما يصبح عدد اللاعبين أكبر.',
+      'يمكنك الآن اختيار حتى',
+      'من برا السالفة.',
+      'هذا الوضع يحتاج بين',
+      'لاعبين.',
+      'التالي: اختيار الفئة',
+      'تعديل الاسم',
+      'اكتب اسم اللاعب',
+    ]);
 
     return BaraScaffold(
       title: l10n.players,
@@ -72,7 +70,8 @@ class PlayersScreen extends ConsumerWidget {
                   ),
                 ),
                 TextButton.icon(
-                  onPressed: () => ref.read(gameSessionProvider.notifier).shufflePlayers(),
+                  onPressed: () =>
+                      ref.read(gameSessionProvider.notifier).shufflePlayers(),
                   icon: const Icon(Icons.shuffle_rounded),
                   label: Text(localizeUiPhrase(ref, 'خلط')),
                 ),
@@ -87,7 +86,9 @@ class PlayersScreen extends ConsumerWidget {
                 child: Row(
                   children: [
                     GestureDetector(
-                      onTap: () => ref.read(gameSessionProvider.notifier).cycleAvatar(player.id),
+                      onTap: () => ref
+                          .read(gameSessionProvider.notifier)
+                          .cycleAvatar(player.id),
                       child: PlayerAvatar(
                         index: player.avatarIndex,
                         label: '${player.avatarIndex + 1}',
@@ -98,19 +99,33 @@ class PlayersScreen extends ConsumerWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(player.name, style: Theme.of(context).textTheme.titleMedium),
+                          Text(
+                            player.name,
+                            style: Theme.of(context).textTheme.titleMedium,
+                          ),
                           const SizedBox(height: 4),
-                          Text(localizeUiPhrase(ref, 'اضغط على الصورة لتبديل الهوية البصرية.')),
+                          Text(
+                            localizeUiPhrase(
+                              ref,
+                              'اضغط على الصورة لتبديل الهوية البصرية.',
+                            ),
+                          ),
                         ],
                       ),
                     ),
                     IconButton(
-                      onPressed: () => _showRenameDialog(context, ref, player.id, player.name),
+                      onPressed: () => _showRenameDialog(
+                        context,
+                        ref,
+                        player.id,
+                        player.name,
+                      ),
                       icon: const Icon(Icons.edit_rounded),
                     ),
                     IconButton(
-                      onPressed: () =>
-                          ref.read(gameSessionProvider.notifier).removePlayer(player.id),
+                      onPressed: () => ref
+                          .read(gameSessionProvider.notifier)
+                          .removePlayer(player.id),
                       icon: const Icon(Icons.close_rounded),
                     ),
                   ],
@@ -131,14 +146,19 @@ class PlayersScreen extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(localizeUiPhrase(ref, 'عدد برا السالفة'),
-                    style: Theme.of(context).textTheme.titleLarge),
+                Text(
+                  localizeUiPhrase(ref, 'عدد برا السالفة'),
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
                 const SizedBox(height: 8),
                 Text(
                   maxOutsiders == 1
-                      ? localizeUiPhrase(ref, 'يزيد تلقائيًا عندما يصبح عدد اللاعبين أكبر.')
+                      ? localizeUiPhrase(
+                          ref,
+                          'يزيد تلقائيًا عندما يصبح عدد اللاعبين أكبر.',
+                        )
                       : '${localizeUiPhrase(ref, 'يمكنك الآن اختيار حتى')} '
-                          '$maxOutsiders ${localizeUiPhrase(ref, 'من برا السالفة.')}',
+                            '$maxOutsiders ${localizeUiPhrase(ref, 'من برا السالفة.')}',
                 ),
                 const SizedBox(height: 14),
                 Wrap(
@@ -149,12 +169,28 @@ class PlayersScreen extends ConsumerWidget {
                     return ChoiceChip(
                       label: Text('$value'),
                       selected: session.outsiderCount == value,
-                      onSelected: (_) =>
-                          ref.read(gameSessionProvider.notifier).setOutsiderCount(value),
+                      onSelected: (_) => ref
+                          .read(gameSessionProvider.notifier)
+                          .setOutsiderCount(value),
                     );
                   }),
                 ),
               ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          GlowCard(
+            child: SwitchListTile.adaptive(
+              value: session.sequentialEliminationEnabled,
+              contentPadding: EdgeInsets.zero,
+              title: const Text('التصويت بالإقصاء المتتابع'),
+              subtitle: const Text(
+                'متاح مع واحد أو أكثر من برا السالفة: صوت واحد لكل لاعب، ثم جولة جديدة حتى الحسم.',
+              ),
+              secondary: const Icon(Icons.how_to_vote_rounded),
+              onChanged: (value) => ref
+                  .read(gameSessionProvider.notifier)
+                  .toggleSequentialElimination(value),
             ),
           ),
           if (!playerCountIsValid) ...[
@@ -170,7 +206,9 @@ class PlayersScreen extends ConsumerWidget {
           BaraButton.primary(
             label: localizeUiPhrase(ref, 'التالي: اختيار الفئة'),
             icon: Icons.arrow_back_rounded,
-            onPressed: playerCountIsValid ? () => context.push(CategoriesScreen.routePath) : null,
+            onPressed: playerCountIsValid
+                ? () => context.push(CategoriesScreen.routePath)
+                : null,
           ),
         ],
       ),
@@ -205,7 +243,9 @@ class PlayersScreen extends ConsumerWidget {
             ),
             FilledButton(
               onPressed: () {
-                ref.read(gameSessionProvider.notifier).updatePlayerName(playerId, controller.text);
+                ref
+                    .read(gameSessionProvider.notifier)
+                    .updatePlayerName(playerId, controller.text);
                 Navigator.of(context).pop();
               },
               child: Text(AppLocalizations.of(context).save),

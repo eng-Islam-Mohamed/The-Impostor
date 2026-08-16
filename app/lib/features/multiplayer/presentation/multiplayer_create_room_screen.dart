@@ -87,8 +87,10 @@ class _MultiplayerCreateRoomScreenState
                   ),
                 ),
                 const SizedBox(height: 18),
-                Text(localizeUiPhrase(ref, 'الوضع'),
-                    style: Theme.of(context).textTheme.titleMedium),
+                Text(
+                  localizeUiPhrase(ref, 'الوضع'),
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
                 const SizedBox(height: 10),
                 Wrap(
                   spacing: 10,
@@ -111,8 +113,10 @@ class _MultiplayerCreateRoomScreenState
                   }).toList(),
                 ),
                 const SizedBox(height: 18),
-                Text(localizeUiPhrase(ref, 'الفئة'),
-                    style: Theme.of(context).textTheme.titleMedium),
+                Text(
+                  localizeUiPhrase(ref, 'الفئة'),
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
                 const SizedBox(height: 10),
                 Wrap(
                   spacing: 10,
@@ -126,25 +130,31 @@ class _MultiplayerCreateRoomScreenState
                   }).toList(),
                 ),
                 const SizedBox(height: 18),
-                Text(localizeUiPhrase(ref, 'الخصوصية'),
-                    style: Theme.of(context).textTheme.titleMedium),
+                Text(
+                  localizeUiPhrase(ref, 'الخصوصية'),
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
                 const SizedBox(height: 10),
                 Wrap(
                   spacing: 10,
                   runSpacing: 10,
                   children: MultiplayerRoomVisibility.values.map((visibility) {
-                    final label = visibility == MultiplayerRoomVisibility.privateRoom
+                    final label =
+                        visibility == MultiplayerRoomVisibility.privateRoom
                         ? localizeUiPhrase(ref, 'خاصة')
                         : localizeUiPhrase(ref, 'عامة');
                     return ChoiceChip(
                       label: Text(label),
                       selected: _visibility == visibility,
-                      onSelected: (_) => setState(() => _visibility = visibility),
+                      onSelected: (_) =>
+                          setState(() => _visibility = visibility),
                     );
                   }).toList(),
                 ),
                 const SizedBox(height: 18),
-                Text('${localizeUiPhrase(ref, 'أقصى عدد لاعبين')}: $_maxPlayers'),
+                Text(
+                  '${localizeUiPhrase(ref, 'أقصى عدد لاعبين')}: $_maxPlayers',
+                ),
                 Slider(
                   value: _maxPlayers.toDouble(),
                   min: _mode.minPlayers.toDouble(),
@@ -159,8 +169,10 @@ class _MultiplayerCreateRoomScreenState
                   }),
                 ),
                 const SizedBox(height: 18),
-                Text(localizeUiPhrase(ref, 'عدد برا السالفة'),
-                    style: Theme.of(context).textTheme.titleMedium),
+                Text(
+                  localizeUiPhrase(ref, 'عدد برا السالفة'),
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
                 const SizedBox(height: 10),
                 Wrap(
                   spacing: 10,
@@ -172,7 +184,8 @@ class _MultiplayerCreateRoomScreenState
                       return ChoiceChip(
                         label: Text('$count'),
                         selected: _outsiderCount == count,
-                        onSelected: (_) => setState(() => _outsiderCount = count),
+                        onSelected: (_) =>
+                            setState(() => _outsiderCount = count),
                       );
                     },
                   ),
@@ -185,15 +198,19 @@ class _MultiplayerCreateRoomScreenState
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(localizeUiPhrase(ref, 'الأفاتار'),
-                    style: Theme.of(context).textTheme.titleMedium),
+                Text(
+                  localizeUiPhrase(ref, 'الأفاتار'),
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
                 const SizedBox(height: 10),
                 Wrap(
                   spacing: 10,
                   runSpacing: 10,
                   children: List.generate(8, (index) {
                     return ChoiceChip(
-                      label: Text('${localizeUiPhrase(ref, 'رقم')} ${index + 1}'),
+                      label: Text(
+                        '${localizeUiPhrase(ref, 'رقم')} ${index + 1}',
+                      ),
                       selected: _avatarIndex == index,
                       onSelected: (_) => setState(() => _avatarIndex = index),
                     );
@@ -210,14 +227,18 @@ class _MultiplayerCreateRoomScreenState
               await ref
                   .read(multiplayerClientConfigProvider.notifier)
                   .setUseLiveServer(true);
-              await ref.read(multiplayerRoomProvider.notifier).createRoom(
+              await ref
+                  .read(multiplayerRoomProvider.notifier)
+                  .createRoom(
                     displayName: _nameController.text.trim().isEmpty
                         ? localizeUiPhrase(ref, 'المضيف')
                         : _nameController.text.trim(),
                     avatarIndex: _avatarIndex,
                     modeSlug: _mode.slug,
                     packId: selectedPackId,
-                    topicPool: packs.firstWhere((pack) => pack.id == selectedPackId).topics,
+                    topicPool: packs
+                        .firstWhere((pack) => pack.id == selectedPackId)
+                        .topics,
                     visibility: _visibility,
                     maxPlayers: _maxPlayers,
                     outsiderCount: _outsiderCount,

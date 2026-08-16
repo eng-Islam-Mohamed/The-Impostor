@@ -19,11 +19,19 @@ dependencies:
   url_launcher: ^6.3.2
   translator: ^1.0.4+1
   socket_io_client: ^3.1.4
+  path_provider: 2.1.5
+  firebase_core: ^4.12.1
+  firebase_auth: ^6.5.6
+  cloud_firestore: ^6.7.1
+  cloud_functions: ^6.3.5
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+
+dependency_overrides:
+  path_provider_foundation: 2.4.1
 
 flutter:
   generate: true

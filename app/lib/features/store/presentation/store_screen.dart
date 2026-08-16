@@ -28,19 +28,28 @@ class StoreScreen extends ConsumerWidget {
         children: [
           _StoreCard(
             title: localizeUiPhrase(ref, 'جلسة آخر الليل'),
-            subtitle: localizeUiPhrase(ref, 'باك بريميوم للكلمات الأصعب والجو الأقوى.'),
+            subtitle: localizeUiPhrase(
+              ref,
+              'باك بريميوم للكلمات الأصعب والجو الأقوى.',
+            ),
             badge: 'Premium Pack',
           ),
           const SizedBox(height: 12),
           _StoreCard(
             title: 'Party Bundle',
-            subtitle: localizeUiPhrase(ref, 'ثيم بصري ذهبي + باك خاص + شارة مشاركة.'),
+            subtitle: localizeUiPhrase(
+              ref,
+              'ثيم بصري ذهبي + باك خاص + شارة مشاركة.',
+            ),
             badge: 'Bundle',
           ),
           const SizedBox(height: 12),
           _StoreCard(
             title: localizeUiPhrase(ref, 'لمة العائلة'),
-            subtitle: localizeUiPhrase(ref, 'تجربة ألطف ومناسبة للجلسات المختلطة.'),
+            subtitle: localizeUiPhrase(
+              ref,
+              'تجربة ألطف ومناسبة للجلسات المختلطة.',
+            ),
             badge: 'Family',
           ),
         ],

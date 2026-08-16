@@ -4,7 +4,7 @@ import 'package:bara_alsalfa/domain/models/category_pack.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final subjectsStoreProvider = Provider<SubjectsStore>(
-  (ref) => throw UnimplementedError('SubjectsStore override missing.'),
+  (ref) => LocalSubjectsStore(),
 );
 
 final initialCategoryPacksProvider = Provider<List<CategoryPack>>(
@@ -19,6 +19,38 @@ class CategoryLibraryController extends Notifier<List<CategoryPack>> {
 
   CategoryPack getPackById(String id) {
     return state.firstWhere((pack) => pack.id == id);
+  }
+
+  Future<CategoryPack> addPack({
+    required String title,
+    String? subtitle,
+    List<String> topics = const [],
+  }) async {
+    final trimmedTitle = title.trim();
+    if (trimmedTitle.isEmpty) {
+      throw ArgumentError('Pack title cannot be empty.');
+    }
+
+    final cleanedTopics =
+        topics
+            .map((topic) => topic.trim())
+            .where((topic) => topic.isNotEmpty)
+            .toSet()
+            .toList(growable: true)
+          ..sort((a, b) => a.compareTo(b));
+    final pack = CategoryPack(
+      id: _uniquePackId(trimmedTitle),
+      title: trimmedTitle,
+      subtitle: (subtitle?.trim().isNotEmpty ?? false)
+          ? subtitle!.trim()
+          : 'Custom subject section',
+      difficultyLabel: 'Custom',
+      isPremium: false,
+      topics: cleanedTopics.isEmpty ? ['New subject'] : cleanedTopics,
+    );
+    state = [...state, pack];
+    await _store.save(state);
+    return pack;
   }
 
   Future<void> addTopic(String packId, String topic) async {
@@ -64,9 +96,28 @@ class CategoryLibraryController extends Notifier<List<CategoryPack>> {
     ];
     await _store.save(state);
   }
+
+  String _uniquePackId(String title) {
+    final base = title
+        .toLowerCase()
+        .replaceAll(RegExp(r'[^a-z0-9\u0600-\u06FF]+'), '-')
+        .replaceAll(RegExp(r'^-+|-+$'), '');
+    final seed = base.isEmpty
+        ? 'custom-${DateTime.now().millisecondsSinceEpoch}'
+        : 'custom-$base';
+    final existingIds = state.map((pack) => pack.id).toSet();
+    if (!existingIds.contains(seed)) {
+      return seed;
+    }
+    var index = 2;
+    while (existingIds.contains('$seed-$index')) {
+      index++;
+    }
+    return '$seed-$index';
+  }
 }
 
 final categoryLibraryProvider =
     NotifierProvider<CategoryLibraryController, List<CategoryPack>>(
-  CategoryLibraryController.new,
-);
+      CategoryLibraryController.new,
+    );

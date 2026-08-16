@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final settingsStoreProvider = Provider<SettingsStore>(
-  (ref) => throw UnimplementedError('SettingsStore override missing.'),
+  (ref) => LocalSettingsStore(),
 );
 
 final initialAppSettingsProvider = Provider<AppSettings>(
@@ -26,9 +26,15 @@ class AppSettingsController extends Notifier<AppSettings> {
   }
 
   Future<void> toggleThemeMode() async {
-    final nextMode =
-        state.themeMode == ThemeMode.dark ? ThemeMode.light : ThemeMode.dark;
+    final nextMode = state.themeMode == ThemeMode.dark
+        ? ThemeMode.light
+        : ThemeMode.dark;
     state = state.copyWith(themeMode: nextMode);
+    await _settingsStore.save(state);
+  }
+
+  Future<void> setVisualTheme(AppVisualTheme visualTheme) async {
+    state = state.copyWith(visualTheme: visualTheme);
     await _settingsStore.save(state);
   }
 
@@ -56,5 +62,5 @@ class AppSettingsController extends Notifier<AppSettings> {
 
 final appSettingsProvider =
     NotifierProvider<AppSettingsController, AppSettings>(
-  AppSettingsController.new,
-);
+      AppSettingsController.new,
+    );

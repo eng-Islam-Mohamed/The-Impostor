@@ -2,7 +2,9 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
+import 'package:bara_alsalfa/data/local/app_directories.dart';
 import 'package:bara_alsalfa/domain/models/multiplayer_client_config.dart';
+import 'package:flutter/foundation.dart';
 
 abstract class MultiplayerConfigStore {
   Future<MultiplayerClientConfig> load();
@@ -16,30 +18,43 @@ class LocalMultiplayerConfigStore implements MultiplayerConfigStore {
     defaultValue: 'http://192.168.1.40:8080',
   );
 
-  LocalMultiplayerConfigStore({String? filePath})
-      : _file = File(
-          filePath ??
-              '${Directory.systemTemp.path}${Platform.pathSeparator}'
-                  'bara_alsalfa_multiplayer_config.json',
-        );
+  LocalMultiplayerConfigStore({String? filePath}) : _filePath = filePath;
 
-  final File _file;
+  static const _fileName = 'bara_alsalfa_multiplayer_config.json';
+  static MultiplayerClientConfig? _webCache;
+
+  final String? _filePath;
+
+  Future<File> get _file {
+    return AppDirectories.documentsFile(_fileName, overridePath: _filePath);
+  }
 
   @override
   Future<MultiplayerClientConfig> load() async {
+    if (kIsWeb) {
+      return _webCache ??= MultiplayerClientConfig.defaults().copyWith(
+        clientId: _generateClientId(),
+      );
+    }
     try {
-      if (!await _file.exists()) {
-        return MultiplayerClientConfig.defaults().copyWith(clientId: _generateClientId());
+      final file = await _file;
+      if (!await file.exists()) {
+        return MultiplayerClientConfig.defaults().copyWith(
+          clientId: _generateClientId(),
+        );
       }
 
-      final content = await _file.readAsString();
+      final content = await file.readAsString();
       if (content.trim().isEmpty) {
-        return MultiplayerClientConfig.defaults().copyWith(clientId: _generateClientId());
+        return MultiplayerClientConfig.defaults().copyWith(
+          clientId: _generateClientId(),
+        );
       }
 
       final json = jsonDecode(content) as Map<String, dynamic>;
       final storedVersion = json['configVersion'] as int? ?? 0;
-      final storedUrl = (json['serverUrl'] as String?)?.trim() ?? _defaultServerUrl;
+      final storedUrl =
+          (json['serverUrl'] as String?)?.trim() ?? _defaultServerUrl;
       final storedClientId = (json['clientId'] as String?)?.trim();
       return MultiplayerClientConfig(
         useLiveServer: storedVersion < _configVersion
@@ -53,21 +68,31 @@ class LocalMultiplayerConfigStore implements MultiplayerConfigStore {
             : storedClientId,
       );
     } catch (_) {
-      return MultiplayerClientConfig.defaults().copyWith(clientId: _generateClientId());
+      return MultiplayerClientConfig.defaults().copyWith(
+        clientId: _generateClientId(),
+      );
     }
   }
 
   @override
   Future<void> save(MultiplayerClientConfig config) async {
-    await _file.parent.create(recursive: true);
-    await _file.writeAsString(
-      jsonEncode({
-        'configVersion': _configVersion,
-        'useLiveServer': config.useLiveServer,
-        'serverUrl': config.serverUrl,
-        'clientId': config.clientId,
-      }),
-    );
+    if (kIsWeb) {
+      _webCache = config;
+      return;
+    }
+    try {
+      final file = await _file;
+      await file.parent.create(recursive: true);
+      await file.writeAsString(
+        jsonEncode({
+          'configVersion': _configVersion,
+          'useLiveServer': config.useLiveServer,
+          'serverUrl': config.serverUrl,
+          'clientId': config.clientId,
+        }),
+        flush: true,
+      );
+    } catch (_) {}
   }
 
   String _generateClientId() {

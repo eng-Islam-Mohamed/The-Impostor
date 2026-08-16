@@ -32,10 +32,36 @@ enum SupportedLocale {
       SupportedLocale.values.map((l) => l.locale).toList();
 }
 
+enum AppVisualTheme {
+  emeraldLounge('Emerald Lounge', 'اللاونج الزمردي'),
+  royalNoir('Royal Noir', 'الملكي الأسود'),
+  midnightCoral('Midnight Coral', 'مرجان منتصف الليل'),
+  pearlMajlis('Pearl Majlis', 'مجلس اللؤلؤ'),
+  neonSouk('Neon Souk', 'سوق النيون'),
+  candyChaos('Candy Chaos', 'حلوى وفوضى'),
+  desertArcade('Desert Arcade', 'أركيد الصحراء'),
+  oceanMajlis('Ocean Majlis', 'مجلس المحيط');
+
+  const AppVisualTheme(this.label, [this.arabicLabel]);
+
+  final String label;
+  final String? arabicLabel;
+
+  String get localizedTitle => arabicLabel ?? label;
+
+  static AppVisualTheme fromName(String? name) {
+    return AppVisualTheme.values.firstWhere(
+      (theme) => theme.name == name,
+      orElse: () => AppVisualTheme.emeraldLounge,
+    );
+  }
+}
+
 @immutable
 class AppSettings {
   const AppSettings({
     required this.themeMode,
+    required this.visualTheme,
     required this.onboardingSeen,
     required this.hapticsEnabled,
     required this.soundEnabled,
@@ -44,14 +70,16 @@ class AppSettings {
   });
 
   const AppSettings.defaults()
-      : themeMode = ThemeMode.dark,
-        onboardingSeen = false,
-        hapticsEnabled = true,
-        soundEnabled = true,
-        reducedMotion = false,
-        locale = SupportedLocale.arabic;
+    : themeMode = ThemeMode.dark,
+      visualTheme = AppVisualTheme.emeraldLounge,
+      onboardingSeen = true,
+      hapticsEnabled = true,
+      soundEnabled = true,
+      reducedMotion = false,
+      locale = SupportedLocale.arabic;
 
   final ThemeMode themeMode;
+  final AppVisualTheme visualTheme;
   final bool onboardingSeen;
   final bool hapticsEnabled;
   final bool soundEnabled;
@@ -60,6 +88,7 @@ class AppSettings {
 
   AppSettings copyWith({
     ThemeMode? themeMode,
+    AppVisualTheme? visualTheme,
     bool? onboardingSeen,
     bool? hapticsEnabled,
     bool? soundEnabled,
@@ -68,6 +97,7 @@ class AppSettings {
   }) {
     return AppSettings(
       themeMode: themeMode ?? this.themeMode,
+      visualTheme: visualTheme ?? this.visualTheme,
       onboardingSeen: onboardingSeen ?? this.onboardingSeen,
       hapticsEnabled: hapticsEnabled ?? this.hapticsEnabled,
       soundEnabled: soundEnabled ?? this.soundEnabled,

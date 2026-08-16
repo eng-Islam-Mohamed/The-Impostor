@@ -3,6 +3,7 @@ import 'package:bara_alsalfa/features/game_setup/presentation/manage_subjects_sc
 import 'package:bara_alsalfa/features/game_setup/presentation/players_screen.dart';
 import 'package:bara_alsalfa/features/game_setup/presentation/setup_screen.dart';
 import 'package:bara_alsalfa/features/home/presentation/home_screen.dart';
+import 'package:bara_alsalfa/features/groups/presentation/saved_groups_screen.dart';
 import 'package:bara_alsalfa/features/multiplayer/presentation/multiplayer_create_room_screen.dart';
 import 'package:bara_alsalfa/features/multiplayer/presentation/multiplayer_hub_screen.dart';
 import 'package:bara_alsalfa/features/multiplayer/presentation/multiplayer_join_room_screen.dart';
@@ -12,6 +13,7 @@ import 'package:bara_alsalfa/features/onboarding/presentation/onboarding_screen.
 import 'package:bara_alsalfa/features/profile/presentation/profile_screen.dart';
 import 'package:bara_alsalfa/features/results/presentation/results_screen.dart';
 import 'package:bara_alsalfa/features/round/presentation/round_screen.dart';
+import 'package:bara_alsalfa/features/round/presentation/skills_showcase_screen.dart';
 import 'package:bara_alsalfa/features/splash/presentation/splash_screen.dart';
 import 'package:bara_alsalfa/features/stats/presentation/stats_screen.dart';
 import 'package:bara_alsalfa/features/store/presentation/store_screen.dart';
@@ -35,6 +37,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const HomeScreen(),
       ),
       GoRoute(
+        path: SavedGroupsScreen.routePath,
+        builder: (context, state) => const SavedGroupsScreen(),
+      ),
+      GoRoute(
         path: MultiplayerHubScreen.routePath,
         builder: (context, state) => const MultiplayerHubScreen(),
       ),
@@ -56,9 +62,8 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: SetupScreen.routePath,
-        builder: (context, state) => SetupScreen(
-          initialModeSlug: state.uri.queryParameters['mode'],
-        ),
+        builder: (context, state) =>
+            SetupScreen(initialModeSlug: state.uri.queryParameters['mode']),
       ),
       GoRoute(
         path: PlayersScreen.routePath,
@@ -74,7 +79,9 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: RoundScreen.routePath,
-        builder: (context, state) => const RoundScreen(),
+        builder: (context, state) => RoundScreen(
+          initialRevealed: state.uri.queryParameters['revealed'] == 'true',
+        ),
       ),
       GoRoute(
         path: ResultsScreen.routePath,
@@ -91,6 +98,18 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: ProfileScreen.routePath,
         builder: (context, state) => const ProfileScreen(),
+      ),
+      GoRoute(
+        path: SkillsShowcaseScreen.routePath,
+        builder: (context, state) => const SkillsShowcaseScreen(),
+        routes: [
+          GoRoute(
+            path: ':skillKey',
+            builder: (context, state) => SkillsShowcaseScreen(
+              skillKey: state.pathParameters['skillKey'],
+            ),
+          ),
+        ],
       ),
     ],
   );

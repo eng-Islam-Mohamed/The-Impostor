@@ -2,40 +2,48 @@ import 'package:bara_alsalfa/app/router/app_router.dart';
 import 'package:bara_alsalfa/app/theme/app_theme.dart';
 import 'package:bara_alsalfa/domain/models/app_settings.dart';
 import 'package:bara_alsalfa/features/profile/presentation/settings_controller.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:bara_alsalfa/l10n/generated/app_localizations.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class BaraApp extends ConsumerWidget {
+class BaraApp extends ConsumerStatefulWidget {
   const BaraApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final router = ref.watch(appRouterProvider);
+  ConsumerState<BaraApp> createState() => _BaraAppState();
+}
+
+class _BaraAppState extends ConsumerState<BaraApp> {
+  @override
+  void initState() {
+    super.initState();
+    if (kIsWeb) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final uri = Uri.base;
+        final themeParam = uri.queryParameters['theme'];
+        if (themeParam != null) {
+          final theme = AppVisualTheme.fromName(themeParam);
+          ref.read(appSettingsProvider.notifier).setVisualTheme(theme);
+        }
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final settings = ref.watch(appSettingsProvider);
 
     return MaterialApp.router(
+      title: 'برّا السالفة',
       debugShowCheckedModeBanner: false,
-      onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
-      routerConfig: router,
+      theme: AppTheme.lightTheme(settings.visualTheme),
+      darkTheme: AppTheme.darkTheme(settings.visualTheme),
       themeMode: settings.themeMode,
-      theme: AppTheme.lightTheme,
-      darkTheme: AppTheme.darkTheme,
       locale: settings.locale.locale,
-      supportedLocales: SupportedLocale.supportedLocales,
-      localizationsDelegates: const [
-        AppLocalizations.delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      builder: (context, child) {
-        return Directionality(
-          textDirection: settings.locale.textDirection,
-          child: child ?? const SizedBox.shrink(),
-        );
-      },
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      routerConfig: ref.watch(appRouterProvider),
     );
   }
 }

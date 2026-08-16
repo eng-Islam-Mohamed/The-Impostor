@@ -31,7 +31,9 @@ class MultiplayerRoomController extends AsyncNotifier<MultiplayerRoomState?> {
   }) async {
     state = const AsyncLoading();
     try {
-      final room = await ref.read(multiplayerRoomRepositoryProvider).createRoom(
+      final room = await ref
+          .read(multiplayerRoomRepositoryProvider)
+          .createRoom(
             displayName: displayName,
             avatarIndex: avatarIndex,
             modeSlug: modeSlug,
@@ -54,7 +56,9 @@ class MultiplayerRoomController extends AsyncNotifier<MultiplayerRoomState?> {
   }) async {
     state = const AsyncLoading();
     try {
-      final room = await ref.read(multiplayerRoomRepositoryProvider).joinRoom(
+      final room = await ref
+          .read(multiplayerRoomRepositoryProvider)
+          .joinRoom(
             roomCode: roomCode,
             displayName: displayName,
             avatarIndex: avatarIndex,
@@ -71,10 +75,9 @@ class MultiplayerRoomController extends AsyncNotifier<MultiplayerRoomState?> {
     if (room == null || player == null) {
       return;
     }
-    await ref.read(multiplayerRoomRepositoryProvider).toggleReady(
-          roomId: room.roomId,
-          playerId: player.id,
-        );
+    await ref
+        .read(multiplayerRoomRepositoryProvider)
+        .toggleReady(roomId: room.roomId, playerId: player.id);
   }
 
   Future<void> seedDemoPlayers() async {
@@ -82,7 +85,9 @@ class MultiplayerRoomController extends AsyncNotifier<MultiplayerRoomState?> {
     if (room == null) {
       return;
     }
-    await ref.read(multiplayerRoomRepositoryProvider).seedDemoPlayers(roomId: room.roomId);
+    await ref
+        .read(multiplayerRoomRepositoryProvider)
+        .seedDemoPlayers(roomId: room.roomId);
   }
 
   Future<void> startGame() async {
@@ -91,10 +96,9 @@ class MultiplayerRoomController extends AsyncNotifier<MultiplayerRoomState?> {
     if (room == null || player == null) {
       return;
     }
-    await ref.read(multiplayerRoomRepositoryProvider).startGame(
-          roomId: room.roomId,
-          playerId: player.id,
-        );
+    await ref
+        .read(multiplayerRoomRepositoryProvider)
+        .startGame(roomId: room.roomId, playerId: player.id);
   }
 
   Future<void> advancePrototypePhase() async {
@@ -113,7 +117,9 @@ class MultiplayerRoomController extends AsyncNotifier<MultiplayerRoomState?> {
     if (room == null || player == null || suspectIds.isEmpty) {
       return;
     }
-    await ref.read(multiplayerRoomRepositoryProvider).submitVote(
+    await ref
+        .read(multiplayerRoomRepositoryProvider)
+        .submitVote(
           roomId: room.roomId,
           playerId: player.id,
           suspectIds: suspectIds,
@@ -126,7 +132,9 @@ class MultiplayerRoomController extends AsyncNotifier<MultiplayerRoomState?> {
     if (room == null || player == null) {
       return;
     }
-    await ref.read(multiplayerRoomRepositoryProvider).submitOutsiderGuess(
+    await ref
+        .read(multiplayerRoomRepositoryProvider)
+        .submitOutsiderGuess(
           roomId: room.roomId,
           playerId: player.id,
           guessedTopic: guessedTopic,
@@ -140,10 +148,9 @@ class MultiplayerRoomController extends AsyncNotifier<MultiplayerRoomState?> {
       state = const AsyncData(null);
       return;
     }
-    await ref.read(multiplayerRoomRepositoryProvider).leaveRoom(
-          roomId: room.roomId,
-          playerId: player.id,
-        );
+    await ref
+        .read(multiplayerRoomRepositoryProvider)
+        .leaveRoom(roomId: room.roomId, playerId: player.id);
     await _subscription?.cancel();
     _subscription = null;
     state = const AsyncData(null);
@@ -155,7 +162,9 @@ class MultiplayerRoomController extends AsyncNotifier<MultiplayerRoomState?> {
     if (room == null || player == null) {
       return;
     }
-    await ref.read(multiplayerRoomRepositoryProvider).banPlayer(
+    await ref
+        .read(multiplayerRoomRepositoryProvider)
+        .banPlayer(
           roomId: room.roomId,
           hostPlayerId: player.id,
           targetPlayerId: targetPlayerId,
@@ -169,7 +178,9 @@ class MultiplayerRoomController extends AsyncNotifier<MultiplayerRoomState?> {
     if (room == null || player == null || trimmed.isEmpty) {
       return;
     }
-    await ref.read(multiplayerRoomRepositoryProvider).sendChatMessage(
+    await ref
+        .read(multiplayerRoomRepositoryProvider)
+        .sendChatMessage(
           roomId: room.roomId,
           playerId: player.id,
           text: trimmed,
@@ -189,17 +200,17 @@ class MultiplayerRoomController extends AsyncNotifier<MultiplayerRoomState?> {
         .read(multiplayerRoomRepositoryProvider)
         .watchRoom(roomId: room.roomId, currentPlayerId: room.currentPlayerId)
         .listen(
-      (nextRoom) {
-        state = AsyncData(nextRoom);
-      },
-      onError: (Object error, StackTrace stackTrace) {
-        state = AsyncError(error, stackTrace);
-      },
-    );
+          (nextRoom) {
+            state = AsyncData(nextRoom);
+          },
+          onError: (Object error, StackTrace stackTrace) {
+            state = AsyncError(error, stackTrace);
+          },
+        );
   }
 }
 
 final multiplayerRoomProvider =
     AsyncNotifierProvider<MultiplayerRoomController, MultiplayerRoomState?>(
-  MultiplayerRoomController.new,
-);
+      MultiplayerRoomController.new,
+    );

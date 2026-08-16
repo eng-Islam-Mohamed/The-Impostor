@@ -19,15 +19,12 @@ class MultiplayerChatCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    warmUiPhrases(
-      ref,
-      const [
-        'دردشة الغرفة',
-        'اكتب رسالة سريعة',
-        'إرسال',
-        'النظام',
-      ],
-    );
+    warmUiPhrases(ref, const [
+      'دردشة الغرفة',
+      'اكتب رسالة سريعة',
+      'إرسال',
+      'النظام',
+    ]);
 
     return GlowCard(
       child: Column(
@@ -54,11 +51,16 @@ class MultiplayerChatCard extends ConsumerWidget {
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
                     color: message.isSystem
-                        ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.08)
-                        : Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.65),
+                        ? Theme.of(
+                            context,
+                          ).colorScheme.primary.withValues(alpha: 0.08)
+                        : Theme.of(context).colorScheme.surfaceContainerHighest
+                              .withValues(alpha: 0.65),
                     borderRadius: BorderRadius.circular(18),
                     border: Border.all(
-                      color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.3),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.outlineVariant.withValues(alpha: 0.3),
                     ),
                   ),
                   child: Column(
@@ -67,8 +69,8 @@ class MultiplayerChatCard extends ConsumerWidget {
                       Text(
                         senderLabel,
                         style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
                       ),
                       const SizedBox(height: 4),
                       Text(message.text),

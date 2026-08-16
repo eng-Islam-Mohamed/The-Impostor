@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1083909159269",
+    "project_id": "bacfocus-f6d6e",
+    "storage_bucket": "bacfocus-f6d6e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1083909159269:android:783c66709863d0efed498c",
+        "android_client_info": {
+          "package_name": "com.baraalsalfa.brasalfa"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBH66sR8bVNxflUG-CnbhKkpg37sujpkOw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -8,9 +8,7 @@ final topicTranslationsStoreProvider = Provider<TopicTranslationsStore>(
 );
 
 final initialTopicTranslationsProvider =
-    Provider<Map<String, Map<String, String>>>(
-  (ref) => const {},
-);
+    Provider<Map<String, Map<String, String>>>((ref) => const {});
 
 class TopicTranslationsController
     extends Notifier<Map<String, Map<String, String>>> {
@@ -81,10 +79,7 @@ class TopicTranslationsController
 
       state = {
         ...state,
-        key: {
-          ...?existing,
-          ...translated,
-        },
+        key: {...?existing, ...translated},
       };
       await _store.save(state);
     } finally {
@@ -119,8 +114,7 @@ class TopicTranslationsController
       return;
     }
 
-    final updated = Map<String, Map<String, String>>.from(state)
-      ..remove(key);
+    final updated = Map<String, Map<String, String>>.from(state)..remove(key);
     state = updated;
     await _store.save(updated);
   }
@@ -141,6 +135,7 @@ class TopicTranslationsController
 }
 
 final topicTranslationsProvider =
-    NotifierProvider<TopicTranslationsController, Map<String, Map<String, String>>>(
-  TopicTranslationsController.new,
-);
+    NotifierProvider<
+      TopicTranslationsController,
+      Map<String, Map<String, String>>
+    >(TopicTranslationsController.new);

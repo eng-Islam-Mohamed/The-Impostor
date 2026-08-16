@@ -30,10 +30,7 @@ class BaraButton extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Text(label),
-        if (icon != null) ...[
-          const SizedBox(width: 10),
-          Icon(icon, size: 20),
-        ],
+        if (icon != null) ...[const SizedBox(width: 10), Icon(icon, size: 20)],
       ],
     );
 

@@ -16,13 +16,39 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-class ResultsScreen extends ConsumerWidget {
-  const ResultsScreen({super.key});
+class ResultsScreen extends ConsumerStatefulWidget {
+  const ResultsScreen({super.key, this.initialScrollToScoreboard = false});
 
+  final bool initialScrollToScoreboard;
   static const routePath = '/results';
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ResultsScreen> createState() => _ResultsScreenState();
+}
+
+class _ResultsScreenState extends ConsumerState<ResultsScreen> {
+  late final ScrollController _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialScrollToScoreboard) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && _scrollController.hasClients) {
+          _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+        }
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final session = ref.watch(gameSessionProvider);
     final outcome = session.outcome;
     final settings = ref.watch(appSettingsProvider);
@@ -48,22 +74,21 @@ class ResultsScreen extends ConsumerWidget {
     }
 
     final outsiderPlayers = session.outsiderPlayers;
-    final outsiderNames = outsiderPlayers.map((player) => player.name).join('، ');
-    warmUiPhrases(
-      ref,
-      [
-        outcome.recapLine,
-        'برا السالفة هم',
-        'برا السالفة هو',
-        'تم كشف كل برا السالفة في التصويت',
-        'تم كشف بعض برا السالفة في التصويت',
-        'لم يتم كشفهم في التصويت الأول',
-        'التحدي الأخير',
-        'لم يتم',
-        'السالفة كانت',
-        'لوحة النقاط',
-      ],
-    );
+    final outsiderNames = outsiderPlayers
+        .map((player) => player.name)
+        .join('، ');
+    warmUiPhrases(ref, [
+      outcome.recapLine,
+      'برا السالفة هم',
+      'برا السالفة هو',
+      'تم كشف كل برا السالفة في التصويت',
+      'تم كشف بعض برا السالفة في التصويت',
+      'لم يتم كشفهم في التصويت الأول',
+      'التحدي الأخير',
+      'لم يتم',
+      'السالفة كانت',
+      'لوحة النقاط',
+    ]);
     _warmResultTranslations(
       packId: session.selectedPackId,
       outcome: outcome,
@@ -91,6 +116,7 @@ class ResultsScreen extends ConsumerWidget {
         ),
       ],
       child: ListView(
+        controller: _scrollController,
         padding: const EdgeInsets.fromLTRB(24, 18, 24, 32),
         children: [
           GlowCard(
@@ -121,15 +147,21 @@ class ResultsScreen extends ConsumerWidget {
                 const SizedBox(height: 10),
                 Text(
                   allOutsidersCaught
-                      ? localizeUiPhrase(ref, 'تم كشف كل برا السالفة في التصويت')
+                      ? localizeUiPhrase(
+                          ref,
+                          'تم كشف كل برا السالفة في التصويت',
+                        )
                       : someOutsidersCaught
-                          ? localizeUiPhrase(ref, 'تم كشف بعض برا السالفة في التصويت')
-                          : localizeUiPhrase(ref, 'لم يتم كشفهم في التصويت الأول'),
+                      ? localizeUiPhrase(
+                          ref,
+                          'تم كشف بعض برا السالفة في التصويت',
+                        )
+                      : localizeUiPhrase(ref, 'لم يتم كشفهم في التصويت الأول'),
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: outcome.outsiderCaught
-                            ? Theme.of(context).colorScheme.primary
-                            : Theme.of(context).colorScheme.secondary,
-                      ),
+                    color: outcome.outsiderCaught
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(context).colorScheme.secondary,
+                  ),
                 ),
               ],
             ),
@@ -144,35 +176,33 @@ class ResultsScreen extends ConsumerWidget {
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
                 const SizedBox(height: 10),
-                ...outsiderPlayers.map(
-                  (outsider) {
-                    final rawGuess = outcome.outsiderGuesses[outsider.id];
-                    final guess = rawGuess == null
-                        ? localizeUiPhrase(ref, 'لم يتم')
-                        : rawGuess == 'انتهى الوقت'
-                            ? l10n.timeUp
-                            : localizeTopic(rawGuess);
-                    final isCorrect = outcome.outsiderGuessResults[outsider.id] ?? false;
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Text('${outsider.name}: $guess'),
-                          ),
-                          Text(
-                            isCorrect ? '+1' : '-1',
-                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  color: isCorrect
-                                      ? Theme.of(context).colorScheme.primary
-                                      : Theme.of(context).colorScheme.error,
-                                ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
+                ...outsiderPlayers.map((outsider) {
+                  final rawGuess = outcome.outsiderGuesses[outsider.id];
+                  final guess = rawGuess == null
+                      ? localizeUiPhrase(ref, 'لم يتم')
+                      : rawGuess == 'انتهى الوقت'
+                      ? l10n.timeUp
+                      : localizeTopic(rawGuess);
+                  final isCorrect =
+                      outcome.outsiderGuessResults[outsider.id] ?? false;
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: Row(
+                      children: [
+                        Expanded(child: Text('${outsider.name}: $guess')),
+                        Text(
+                          isCorrect ? '+1' : '-1',
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(
+                                color: isCorrect
+                                    ? Theme.of(context).colorScheme.primary
+                                    : Theme.of(context).colorScheme.error,
+                              ),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
                 const SizedBox(height: 8),
                 Text(
                   localizeUiPhrase(ref, 'السالفة كانت'),
@@ -188,6 +218,59 @@ class ResultsScreen extends ConsumerWidget {
               ],
             ),
           ),
+          if (outcome.powerEvents.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            GlowCard(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.flash_on_rounded,
+                        color: Color(0xFFF59E0B),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        localizeUiPhrase(ref, 'أحداث المهارات التكتيكية'),
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  ...outcome.powerEvents.map(
+                    (event) => Container(
+                      margin: const EdgeInsets.only(bottom: 10),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .surfaceContainerHighest
+                            .withValues(alpha: 0.5),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.primary.withValues(alpha: 0.3),
+                          width: 1,
+                        ),
+                      ),
+                      child: Text(
+                        event,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          height: 1.4,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: 16),
           GlowCard(
             child: Column(
@@ -212,8 +295,10 @@ class ResultsScreen extends ConsumerWidget {
                         Expanded(child: Text(player.name)),
                         Text(
                           _formatDelta(outcome.scoreDeltas[player.id] ?? 0),
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                color: (outcome.scoreDeltas[player.id] ?? 0) >= 0
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(
+                                color:
+                                    (outcome.scoreDeltas[player.id] ?? 0) >= 0
                                     ? Theme.of(context).colorScheme.primary
                                     : Theme.of(context).colorScheme.error,
                               ),
@@ -279,14 +364,15 @@ class ResultsScreen extends ConsumerWidget {
     final topics = <String>{
       outcome.topic,
       ...outcome.outsiderGuessOptions,
+      ...outcome.outsiderGuessOptionsByPlayer.values.expand(
+        (options) => options,
+      ),
       ...outcome.outsiderGuesses.values,
     }..remove('انتهى الوقت');
 
     Future<void>.microtask(
-      () => topicLocalizer.ensureTopicsTranslated(
-            packId: packId,
-            topics: topics,
-          ),
+      () =>
+          topicLocalizer.ensureTopicsTranslated(packId: packId, topics: topics),
     );
   }
 }

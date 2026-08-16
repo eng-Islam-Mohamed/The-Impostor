@@ -27,4 +27,17 @@ class PlayerProfile {
       score: score ?? this.score,
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {'id': id, 'name': name, 'avatarIndex': avatarIndex, 'score': score};
+  }
+
+  factory PlayerProfile.fromJson(Map<String, dynamic> json) {
+    return PlayerProfile(
+      id: json['id'] as String,
+      name: json['name'] as String,
+      avatarIndex: json['avatarIndex'] as int,
+      score: json['score'] as int,
+    );
+  }
 }

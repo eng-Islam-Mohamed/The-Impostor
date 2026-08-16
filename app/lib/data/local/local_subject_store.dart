@@ -1,8 +1,10 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:bara_alsalfa/data/local/app_directories.dart';
 import 'package:bara_alsalfa/data/local/seed_data.dart';
 import 'package:bara_alsalfa/domain/models/category_pack.dart';
+import 'package:flutter/foundation.dart';
 
 abstract class SubjectsStore {
   Future<List<CategoryPack>> load();
@@ -10,28 +12,48 @@ abstract class SubjectsStore {
 }
 
 class LocalSubjectsStore implements SubjectsStore {
-  LocalSubjectsStore({String? filePath})
-      : _file = File(
-          filePath ??
-              '${Directory.systemTemp.path}${Platform.pathSeparator}bara_alsalfa_subjects.json',
-        );
+  LocalSubjectsStore({String? filePath}) : _filePath = filePath;
 
-  final File _file;
+  static const _fileName = 'bara_alsalfa_subjects.json';
+  static const _seedVersion = 2;
+  static List<CategoryPack> _webCache = seededCategoryPacks;
+
+  final String? _filePath;
+
+  Future<File> get _file {
+    return AppDirectories.documentsFile(_fileName, overridePath: _filePath);
+  }
 
   @override
   Future<List<CategoryPack>> load() async {
+    if (kIsWeb) {
+      return _webCache;
+    }
     try {
-      if (!await _file.exists()) {
+      final file = await _file;
+      if (!await file.exists()) {
         return seededCategoryPacks;
       }
-      final content = await _file.readAsString();
+      final content = await file.readAsString();
       if (content.trim().isEmpty) {
         return seededCategoryPacks;
       }
-      final json = jsonDecode(content) as List<dynamic>;
-      return json
+      final decoded = jsonDecode(content);
+      final storedVersion = decoded is Map<String, dynamic>
+          ? decoded['seedVersion'] as int? ?? 0
+          : 0;
+      final rawPacks = decoded is Map<String, dynamic>
+          ? decoded['packs'] as List<dynamic>? ?? const []
+          : decoded as List<dynamic>;
+      final packs = rawPacks
           .map((item) => CategoryPack.fromJson(item as Map<String, dynamic>))
           .toList(growable: false);
+      if (storedVersion >= _seedVersion) {
+        return packs;
+      }
+      final migrated = _mergeLatestBuiltInTopics(packs);
+      await save(migrated);
+      return migrated;
     } catch (_) {
       return seededCategoryPacks;
     }
@@ -39,11 +61,49 @@ class LocalSubjectsStore implements SubjectsStore {
 
   @override
   Future<void> save(List<CategoryPack> packs) async {
-    await _file.parent.create(recursive: true);
-    await _file.writeAsString(
-      jsonEncode(
-        packs.map((pack) => pack.toJson()).toList(growable: false),
-      ),
-    );
+    if (kIsWeb) {
+      _webCache = packs;
+      return;
+    }
+    try {
+      final file = await _file;
+      await file.parent.create(recursive: true);
+      await file.writeAsString(
+        jsonEncode({
+          'seedVersion': _seedVersion,
+          'packs': packs.map((pack) => pack.toJson()).toList(growable: false),
+        }),
+        flush: true,
+      );
+    } catch (_) {}
+  }
+
+  List<CategoryPack> _mergeLatestBuiltInTopics(List<CategoryPack> packs) {
+    final seededById = {for (final pack in seededCategoryPacks) pack.id: pack};
+    final existingIds = packs.map((pack) => pack.id).toSet();
+    return [
+      for (final pack in packs)
+        if (seededById[pack.id] case final seeded?)
+          pack.copyWith(
+            topics: {
+              ...pack.topics.map(_canonicalBuiltInTopic),
+              ...seeded.topics,
+            }.toList(growable: false),
+          )
+        else
+          pack,
+      for (final seeded in seededCategoryPacks)
+        if (!existingIds.contains(seeded.id)) seeded,
+    ];
+  }
+
+  String _canonicalBuiltInTopic(String topic) {
+    return switch (topic.trim()) {
+      'نابليون' => 'نابليون بونابرت',
+      'Ibn Sina' => 'ابن سينا',
+      'Ibn Battuta' => 'ابن بطوطة',
+      'مهاتما غاندي' => 'المهاتما غاندي',
+      final value => value,
+    };
   }
 }

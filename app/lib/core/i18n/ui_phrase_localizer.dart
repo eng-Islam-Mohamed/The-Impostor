@@ -12,7 +12,9 @@ String localizeUiPhrase(
 }) {
   final locale = ref.read(appSettingsProvider).locale;
   final normalizedSource = sourceLocaleCode ?? _inferSourceLocaleCode(phrase);
-  return ref.read(topicTranslationsProvider.notifier).localizedTopic(
+  return ref
+      .read(topicTranslationsProvider.notifier)
+      .localizedTopic(
         packId: uiPhrasePackId,
         topic: phrase,
         locale: locale,
@@ -30,17 +32,23 @@ void warmUiPhrases(
     return;
   }
 
-  final cleaned = phrases.map((item) => item.trim()).where((item) => item.isNotEmpty).toSet();
+  final cleaned = phrases
+      .map((item) => item.trim())
+      .where((item) => item.isNotEmpty)
+      .toSet();
   if (cleaned.isEmpty) {
     return;
   }
 
   Future<void>.microtask(() async {
     for (final phrase in cleaned) {
-      await ref.read(topicTranslationsProvider.notifier).ensureTranslations(
+      await ref
+          .read(topicTranslationsProvider.notifier)
+          .ensureTranslations(
             packId: uiPhrasePackId,
             topic: phrase,
-            sourceLocaleCode: sourceLocaleCode ?? _inferSourceLocaleCode(phrase),
+            sourceLocaleCode:
+                sourceLocaleCode ?? _inferSourceLocaleCode(phrase),
           );
     }
   });

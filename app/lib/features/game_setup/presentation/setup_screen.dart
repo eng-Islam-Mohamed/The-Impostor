@@ -4,6 +4,7 @@ import 'package:bara_alsalfa/core/widgets/bara_button.dart';
 import 'package:bara_alsalfa/core/widgets/bara_scaffold.dart';
 import 'package:bara_alsalfa/core/widgets/glow_card.dart';
 import 'package:bara_alsalfa/domain/models/game_mode.dart';
+import 'package:bara_alsalfa/domain/models/persisted_game_session.dart';
 import 'package:bara_alsalfa/features/game_setup/presentation/players_screen.dart';
 import 'package:bara_alsalfa/features/round/application/game_session_controller.dart';
 import 'package:bara_alsalfa/l10n/generated/app_localizations.dart';
@@ -32,9 +33,9 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
       return;
     }
     _didApplyInitialMode = true;
-    ref.read(gameSessionProvider.notifier).selectMode(
-          GameMode.fromSlug(widget.initialModeSlug),
-        );
+    ref
+        .read(gameSessionProvider.notifier)
+        .beginNewSession(GameMode.fromSlug(widget.initialModeSlug));
   }
 
   @override
@@ -42,19 +43,16 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
     final session = ref.watch(gameSessionProvider);
     final l10n = AppLocalizations.of(context);
 
-    warmUiPhrases(
-      ref,
-      const [
-        'إنشاء لعبة',
-        'اختر الجو العام للجولة',
-        'قريبًا في التحديث القادم.',
-        'زمن النقاش',
-        'ثانية',
-        'تفعيل احتساب النقاط',
-        'احتفظ بنتيجة اللاعبين بين الجولات',
-        'التالي: إعداد اللاعبين',
-      ],
-    );
+    warmUiPhrases(ref, const [
+      'إنشاء لعبة',
+      'اختر الجو العام للجولة',
+      'قريبًا في التحديث القادم.',
+      'زمن النقاش',
+      'ثانية',
+      'تفعيل احتساب النقاط',
+      'احتفظ بنتيجة اللاعبين بين الجولات',
+      'التالي: إعداد اللاعبين',
+    ]);
 
     return BaraScaffold(
       title: localizeUiPhrase(ref, 'إنشاء لعبة'),
@@ -102,7 +100,9 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                     ),
                     Chip(
                       label: Text(
-                        mode.isMvpAvailable ? mode.playerRange : l10n.comingSoon,
+                        mode.isMvpAvailable
+                            ? mode.playerRange
+                            : l10n.comingSoon,
                       ),
                     ),
                   ],
@@ -124,7 +124,8 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                   min: 25,
                   max: 90,
                   divisions: 13,
-                  label: '${session.discussionSeconds} ${localizeUiPhrase(ref, 'ثانية')}',
+                  label:
+                      '${session.discussionSeconds} ${localizeUiPhrase(ref, 'ثانية')}',
                   onChanged: (value) => ref
                       .read(gameSessionProvider.notifier)
                       .setDiscussionSeconds(value.round()),
@@ -146,8 +147,90 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
                   subtitle: Text(
                     localizeUiPhrase(ref, 'احتفظ بنتيجة اللاعبين بين الجولات'),
                   ),
-                  onChanged: (value) =>
-                      ref.read(gameSessionProvider.notifier).toggleScoring(value),
+                  onChanged: (value) => ref
+                      .read(gameSessionProvider.notifier)
+                      .toggleScoring(value),
+                ),
+                SwitchListTile.adaptive(
+                  value: session.powerCardsEnabled,
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('بطاقات القوة'),
+                  subtitle: const Text(
+                    'تظهر بطاقة سرية لكل لاعب في الكلاسيك والجولة السريعة.',
+                  ),
+                  onChanged: (value) => ref
+                      .read(gameSessionProvider.notifier)
+                      .togglePowerCards(value),
+                ),
+                if (session.powerCardsEnabled) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    'كثافة توزيع المهارات',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: PowerDensity.values.map((density) {
+                      final isSelected = session.powerDensity == density;
+                      return ChoiceChip(
+                        label: Text(density.label),
+                        selected: isSelected,
+                        onSelected: (_) => ref
+                            .read(gameSessionProvider.notifier)
+                            .setPowerDensity(density),
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    session.powerDensity.description,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Text(
+                    'اختر الميزات المسموحة',
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  ...PowerCardCatalog.all.map((card) {
+                    final isEnabled = session.activePowerCardIds.contains(
+                      card.id,
+                    );
+                    return CheckboxListTile(
+                      value: isEnabled,
+                      dense: true,
+                      contentPadding: EdgeInsets.zero,
+                      controlAffinity: ListTileControlAffinity.leading,
+                      title: Text(card.label),
+                      subtitle: Text(
+                        card.isAppliedByRules
+                            ? '${card.description} • مطبقة تلقائياً'
+                            : '${card.description} • قانون اجتماعي',
+                      ),
+                      onChanged: (value) => ref
+                          .read(gameSessionProvider.notifier)
+                          .togglePowerCardType(card.id, value ?? false),
+                    );
+                  }),
+                ],
+                SwitchListTile.adaptive(
+                  value: session.outsidersKnowEachOther,
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('برا السالفة يعرفون بعض'),
+                  subtitle: const Text(
+                    'تظهر أسماء برا السالفة لبعضهم عند الكشف.',
+                  ),
+                  onChanged: (value) => ref
+                      .read(gameSessionProvider.notifier)
+                      .toggleOutsidersKnowEachOther(value),
                 ),
               ],
             ),

@@ -16,6 +16,9 @@ class RoundOutcome {
     required this.recapLine,
     this.outsiderGuesses = const {},
     this.outsiderGuessResults = const {},
+    this.outsiderGuessOptionsByPlayer = const {},
+    this.powerEvents = const [],
+    this.latestAccusedPlayerIds = const [],
   });
 
   final List<String> outsiderIds;
@@ -31,6 +34,13 @@ class RoundOutcome {
   final String recapLine;
   final Map<String, String> outsiderGuesses;
   final Map<String, bool> outsiderGuessResults;
+  final Map<String, List<String>> outsiderGuessOptionsByPlayer;
+  final List<String> powerEvents;
+  final List<String> latestAccusedPlayerIds;
+
+  List<String> guessOptionsFor(String outsiderId) {
+    return outsiderGuessOptionsByPlayer[outsiderId] ?? outsiderGuessOptions;
+  }
 
   RoundOutcome copyWith({
     List<String>? outsiderIds,
@@ -46,6 +56,9 @@ class RoundOutcome {
     String? recapLine,
     Map<String, String>? outsiderGuesses,
     Map<String, bool>? outsiderGuessResults,
+    Map<String, List<String>>? outsiderGuessOptionsByPlayer,
+    List<String>? powerEvents,
+    List<String>? latestAccusedPlayerIds,
   }) {
     return RoundOutcome(
       outsiderIds: outsiderIds ?? this.outsiderIds,
@@ -61,6 +74,11 @@ class RoundOutcome {
       recapLine: recapLine ?? this.recapLine,
       outsiderGuesses: outsiderGuesses ?? this.outsiderGuesses,
       outsiderGuessResults: outsiderGuessResults ?? this.outsiderGuessResults,
+      outsiderGuessOptionsByPlayer:
+          outsiderGuessOptionsByPlayer ?? this.outsiderGuessOptionsByPlayer,
+      powerEvents: powerEvents ?? this.powerEvents,
+      latestAccusedPlayerIds:
+          latestAccusedPlayerIds ?? this.latestAccusedPlayerIds,
     );
   }
 }

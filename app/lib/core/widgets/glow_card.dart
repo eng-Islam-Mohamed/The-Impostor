@@ -42,7 +42,9 @@ class GlowCard extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: colorScheme.primary.withValues(alpha: isSelected ? 0.18 : 0.06),
+            color: colorScheme.primary.withValues(
+              alpha: isSelected ? 0.18 : 0.06,
+            ),
             blurRadius: isSelected ? 30 : 18,
             offset: const Offset(0, 14),
           ),
@@ -60,10 +62,7 @@ class GlowCard extends StatelessWidget {
                   }
                   onTap?.call();
                 },
-          child: Padding(
-            padding: padding,
-            child: child,
-          ),
+          child: Padding(padding: padding, child: child),
         ),
       ),
     );

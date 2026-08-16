@@ -17,9 +17,7 @@ abstract class TopicTranslationService {
 class GoogleTopicTranslationService implements TopicTranslationService {
   const GoogleTopicTranslationService();
 
-  static const Map<String, String> _serviceLocaleCodes = {
-    'zh': 'zh-cn',
-  };
+  static const Map<String, String> _serviceLocaleCodes = {'zh': 'zh-cn'};
 
   GoogleTranslator get _translator => GoogleTranslator();
 
@@ -34,9 +32,7 @@ class GoogleTopicTranslationService implements TopicTranslationService {
       return const {};
     }
 
-    final translations = <String, String>{
-      ...?existingTranslations,
-    };
+    final translations = <String, String>{...?existingTranslations};
 
     if (sourceLocaleCode != null && sourceLocaleCode.isNotEmpty) {
       translations.putIfAbsent(sourceLocaleCode, () => trimmed);

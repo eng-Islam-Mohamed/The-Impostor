@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:bara_alsalfa/core/audio/app_audio.dart';
 import 'package:bara_alsalfa/core/i18n/topic_translation_controller.dart';
 import 'package:bara_alsalfa/core/i18n/ui_phrase_localizer.dart';
 import 'package:bara_alsalfa/core/widgets/bara_button.dart';
@@ -14,6 +15,7 @@ import 'package:bara_alsalfa/features/multiplayer/presentation/multiplayer_hub_s
 import 'package:bara_alsalfa/features/multiplayer/presentation/multiplayer_lobby_screen.dart';
 import 'package:bara_alsalfa/features/profile/presentation/settings_controller.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -23,11 +25,12 @@ class MultiplayerRoomScreen extends ConsumerStatefulWidget {
   static const routePath = '/multiplayer/room';
 
   @override
-  ConsumerState<MultiplayerRoomScreen> createState() => _MultiplayerRoomScreenState();
+  ConsumerState<MultiplayerRoomScreen> createState() =>
+      _MultiplayerRoomScreenState();
 }
 
 class _MultiplayerRoomScreenState extends ConsumerState<MultiplayerRoomScreen> {
-  static const int _outsiderGuessSeconds = 20;
+  static const int _outsiderGuessSeconds = 25;
   String? _selectedGuess;
   final Set<String> _selectedSuspectIds = <String>{};
   final TextEditingController _chatController = TextEditingController();
@@ -46,58 +49,59 @@ class _MultiplayerRoomScreenState extends ConsumerState<MultiplayerRoomScreen> {
     final settings = ref.watch(appSettingsProvider);
     ref.watch(topicTranslationsProvider);
     final room = roomAsync.asData?.value;
+    if (room?.round.phase != MultiplayerRoomPhase.voting &&
+        _selectedSuspectIds.isNotEmpty) {
+      _selectedSuspectIds.clear();
+    }
     _syncCountdownTicker(room);
-    warmUiPhrases(
-      ref,
-      [
-        'الغرفة الحية',
-        'العودة إلى مركز الأونلاين',
-        'الغرفة',
-        'ينتهي الطور تقريبًا عند',
-        'غير محدد',
-        'عرضك الخاص على هذا الهاتف',
-        'اللاعب',
-        'دورك: برا السالفة',
-        'دورك: داخل السالفة',
-        'السالفة',
-        'تم تسجيل تصويتك.',
-        'لم ترسل تصويتك بعد.',
-        'اللوحة الحية',
-        'العودة للردهة',
-        'خروج',
-        'الردهة',
-        'كشف خاص',
-        'جولة التلميحات',
-        'النقاش',
-        'التصويت الخاص',
-        'كشف نتائج التصويت',
-        'تخمين برا السالفة',
-        'النتيجة النهائية',
-        'إجراءات الطور',
-        'تم إرسال تصويتك من هذا الهاتف.',
-        'هذا المكان يمثل شاشة التصويت الخاصة بلاعب واحد فقط.',
-        'تم إرسال الصوت',
-        'إرسال صوتي',
-        'أنت وحدك ترى هذه الخيارات على هاتفك.',
-        'أرسل التخمين النهائي',
-        'الهاتف الخاص ببرا السالفة فقط هو الذي يستقبل شاشة التخمين الآن.',
-        'هذا الزر يحاكي انتقال الخادم للمرحلة التالية داخل النموذج.',
-        'بانتظار بث الخادم للطور التالي في النسخة الحقيقية.',
-        'المرحلة التالية',
-        'عدد الأصوات المتاحة',
-        'اختر',
-        'مشتبهين',
-        'مشتبهًا واحدًا',
-        'احظر اللاعب',
-        'هل تريد حظر هذا اللاعب من الغرفة؟',
-        'إلغاء',
-        'تأكيد الحظر',
-        'المتهمون حاليًا',
-        'الوقت المتبقي',
-        'ث',
-        if (room != null) room.round.statusLine,
-      ],
-    );
+    warmUiPhrases(ref, [
+      'الغرفة الحية',
+      'العودة إلى مركز الأونلاين',
+      'الغرفة',
+      'ينتهي الطور تقريبًا عند',
+      'غير محدد',
+      'عرضك الخاص على هذا الهاتف',
+      'اللاعب',
+      'دورك: برا السالفة',
+      'دورك: داخل السالفة',
+      'السالفة',
+      'تم تسجيل تصويتك.',
+      'لم ترسل تصويتك بعد.',
+      'اللوحة الحية',
+      'العودة للردهة',
+      'خروج',
+      'الردهة',
+      'كشف خاص',
+      'جولة التلميحات',
+      'النقاش',
+      'التصويت الخاص',
+      'كشف نتائج التصويت',
+      'تخمين برا السالفة',
+      'النتيجة النهائية',
+      'إجراءات الطور',
+      'تم إرسال تصويتك من هذا الهاتف.',
+      'هذا المكان يمثل شاشة التصويت الخاصة بلاعب واحد فقط.',
+      'تم إرسال الصوت',
+      'إرسال صوتي',
+      'أنت وحدك ترى هذه الخيارات على هاتفك.',
+      'أرسل التخمين النهائي',
+      'الهاتف الخاص ببرا السالفة فقط هو الذي يستقبل شاشة التخمين الآن.',
+      'هذا الزر يحاكي انتقال الخادم للمرحلة التالية داخل النموذج.',
+      'بانتظار بث الخادم للطور التالي في النسخة الحقيقية.',
+      'المرحلة التالية',
+      'عدد الأصوات المتاحة',
+      'اختر',
+      'مشتبهين',
+      'مشتبهًا واحدًا',
+      'احظر اللاعب',
+      'هل تريد حظر هذا اللاعب من الغرفة؟',
+      'إلغاء',
+      'تأكيد الحظر',
+      'المتهمون حاليًا',
+      'الوقت المتبقي',
+      'ث',
+      if (room != null) room.round.statusLine,
+    ]);
 
     return roomAsync.when(
       data: (room) {
@@ -136,7 +140,8 @@ class _MultiplayerRoomScreenState extends ConsumerState<MultiplayerRoomScreen> {
               locale: settings.locale,
             ),
         };
-        final outsiderGuessRemainingSeconds = room.round.phase == MultiplayerRoomPhase.outsiderGuess
+        final outsiderGuessRemainingSeconds =
+            room.round.phase == MultiplayerRoomPhase.outsiderGuess
             ? _remainingGuessSeconds(room.round.phaseEndsAt)
             : null;
 
@@ -198,7 +203,9 @@ class _MultiplayerRoomScreenState extends ConsumerState<MultiplayerRoomScreen> {
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
                     const SizedBox(height: 12),
-                    Text('${localizeUiPhrase(ref, 'اللاعب')}: ${currentPlayer?.name ?? '---'}'),
+                    Text(
+                      '${localizeUiPhrase(ref, 'اللاعب')}: ${currentPlayer?.name ?? '---'}',
+                    ),
                     const SizedBox(height: 8),
                     Text(
                       privateView.isOutsider
@@ -207,7 +214,9 @@ class _MultiplayerRoomScreenState extends ConsumerState<MultiplayerRoomScreen> {
                     ),
                     if (privateView.topicLabel != null) ...[
                       const SizedBox(height: 8),
-                      Text('${localizeUiPhrase(ref, 'السالفة')}: $localizedTopicLabel'),
+                      Text(
+                        '${localizeUiPhrase(ref, 'السالفة')}: $localizedTopicLabel',
+                      ),
                     ],
                     if (room.round.phase == MultiplayerRoomPhase.voting) ...[
                       const SizedBox(height: 8),
@@ -251,7 +260,8 @@ class _MultiplayerRoomScreenState extends ConsumerState<MultiplayerRoomScreen> {
                                 ),
                               ),
                             Text('${player.score}'),
-                            if (room.isCurrentPlayerHost && player.id != room.currentPlayerId)
+                            if (room.isCurrentPlayerHost &&
+                                player.id != room.currentPlayerId)
                               IconButton(
                                 onPressed: () => _confirmBan(player),
                                 icon: const Icon(Icons.block_rounded),
@@ -281,7 +291,8 @@ class _MultiplayerRoomScreenState extends ConsumerState<MultiplayerRoomScreen> {
                               score: 0,
                               isHost: false,
                               isReady: false,
-                              connectionState: MultiplayerConnectionState.connected,
+                              connectionState:
+                                  MultiplayerConnectionState.connected,
                             ),
                           );
                           return Chip(label: Text(accused.name));
@@ -298,19 +309,19 @@ class _MultiplayerRoomScreenState extends ConsumerState<MultiplayerRoomScreen> {
                 outsiderGuessRemainingSeconds: outsiderGuessRemainingSeconds,
                 selectedGuess: _selectedGuess,
                 selectedSuspectIds: _selectedSuspectIds,
-                onGuessSelected: (value) => setState(() => _selectedGuess = value),
-                onSuspectSelected: (value) => _toggleSuspectSelection(room, value),
+                onGuessSelected: (value) =>
+                    setState(() => _selectedGuess = value),
+                onSuspectSelected: (value) =>
+                    _confirmOnlineSuspectSelection(room, value),
                 onSubmitGuess: (value) async {
-                  await ref.read(multiplayerRoomProvider.notifier).submitOutsiderGuess(value);
-                  setState(() => _selectedGuess = null);
-                },
-                onSubmitVote: () async {
                   await ref
                       .read(multiplayerRoomProvider.notifier)
-                      .submitVote(_selectedSuspectIds.toList(growable: false));
-                  setState(_selectedSuspectIds.clear);
+                      .submitOutsiderGuess(value);
+                  setState(() => _selectedGuess = null);
                 },
-                onAdvance: () => ref.read(multiplayerRoomProvider.notifier).advancePrototypePhase(),
+                onAdvance: () => ref
+                    .read(multiplayerRoomProvider.notifier)
+                    .advancePrototypePhase(),
               ),
               const SizedBox(height: 16),
               MultiplayerChatCard(
@@ -325,7 +336,8 @@ class _MultiplayerRoomScreenState extends ConsumerState<MultiplayerRoomScreen> {
                     child: BaraButton.secondary(
                       label: localizeUiPhrase(ref, 'العودة للردهة'),
                       icon: Icons.meeting_room_rounded,
-                      onPressed: () => context.go(MultiplayerLobbyScreen.routePath),
+                      onPressed: () =>
+                          context.go(MultiplayerLobbyScreen.routePath),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -334,7 +346,9 @@ class _MultiplayerRoomScreenState extends ConsumerState<MultiplayerRoomScreen> {
                       label: localizeUiPhrase(ref, 'خروج'),
                       icon: Icons.logout_rounded,
                       onPressed: () async {
-                        await ref.read(multiplayerRoomProvider.notifier).leaveRoom();
+                        await ref
+                            .read(multiplayerRoomProvider.notifier)
+                            .leaveRoom();
                         if (!context.mounted) {
                           return;
                         }
@@ -358,7 +372,10 @@ class _MultiplayerRoomScreenState extends ConsumerState<MultiplayerRoomScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(localizeUiPhrase(ref, '$error'), textAlign: TextAlign.center),
+                Text(
+                  localizeUiPhrase(ref, '$error'),
+                  textAlign: TextAlign.center,
+                ),
                 const SizedBox(height: 16),
                 BaraButton.primary(
                   label: localizeUiPhrase(ref, 'العودة إلى مركز الأونلاين'),
@@ -373,21 +390,62 @@ class _MultiplayerRoomScreenState extends ConsumerState<MultiplayerRoomScreen> {
     );
   }
 
-  void _toggleSuspectSelection(MultiplayerRoomState room, String playerId) {
+  Future<void> _confirmOnlineSuspectSelection(
+    MultiplayerRoomState room,
+    String playerId,
+  ) async {
+    if (_selectedSuspectIds.contains(playerId)) return;
+    final player = room.players.firstWhere((item) => item.id == playerId);
+    final confirmed =
+        await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: Text(localizeUiPhrase(ref, 'تأكيد التصويت')),
+            content: Text(
+              '${localizeUiPhrase(ref, 'هل تؤكد التصويت لهذا اللاعب؟')}\n${player.name}',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+                child: Text(localizeUiPhrase(ref, 'إلغاء')),
+              ),
+              FilledButton.icon(
+                onPressed: () => Navigator.of(dialogContext).pop(true),
+                icon: const Icon(Icons.how_to_vote_rounded),
+                label: Text(localizeUiPhrase(ref, 'تأكيد')),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+    if (!mounted || !confirmed) return;
+    final currentRoom = ref.read(multiplayerRoomProvider).asData?.value;
+    if (currentRoom == null ||
+        currentRoom.round.phase != MultiplayerRoomPhase.voting ||
+        currentRoom.privateView.voteSubmitted ||
+        _selectedSuspectIds.contains(playerId)) {
+      return;
+    }
+    final nextChoices = {..._selectedSuspectIds, playerId};
+    AppAudio.instance.playVoteConfirm();
+    HapticFeedback.selectionClick();
+    if (nextChoices.length == currentRoom.round.voteSelectionLimit) {
+      await ref
+          .read(multiplayerRoomProvider.notifier)
+          .submitVote(nextChoices.toList(growable: false));
+      if (mounted) setState(_selectedSuspectIds.clear);
+      return;
+    }
     setState(() {
-      if (_selectedSuspectIds.contains(playerId)) {
-        _selectedSuspectIds.remove(playerId);
-        return;
-      }
-      if (_selectedSuspectIds.length >= room.round.voteSelectionLimit) {
-        return;
-      }
-      _selectedSuspectIds.add(playerId);
+      _selectedSuspectIds
+        ..clear()
+        ..addAll(nextChoices);
     });
   }
 
   Future<void> _confirmBan(MultiplayerPlayer player) async {
-    final shouldBan = await showDialog<bool>(
+    final shouldBan =
+        await showDialog<bool>(
           context: context,
           builder: (context) {
             return AlertDialog(
@@ -434,8 +492,14 @@ class _MultiplayerRoomScreenState extends ConsumerState<MultiplayerRoomScreen> {
       MultiplayerRoomPhase.clueTurns => localizeUiPhrase(ref, 'جولة التلميحات'),
       MultiplayerRoomPhase.discussion => localizeUiPhrase(ref, 'النقاش'),
       MultiplayerRoomPhase.voting => localizeUiPhrase(ref, 'التصويت الخاص'),
-      MultiplayerRoomPhase.voteReveal => localizeUiPhrase(ref, 'كشف نتائج التصويت'),
-      MultiplayerRoomPhase.outsiderGuess => localizeUiPhrase(ref, 'تخمين برا السالفة'),
+      MultiplayerRoomPhase.voteReveal => localizeUiPhrase(
+        ref,
+        'كشف نتائج التصويت',
+      ),
+      MultiplayerRoomPhase.outsiderGuess => localizeUiPhrase(
+        ref,
+        'تخمين برا السالفة',
+      ),
       MultiplayerRoomPhase.results => localizeUiPhrase(ref, 'النتيجة النهائية'),
     };
   }
@@ -453,7 +517,9 @@ class _MultiplayerRoomScreenState extends ConsumerState<MultiplayerRoomScreen> {
     final uiPhrases = <String>{
       room.round.statusLine,
       room.systemMessage,
-      ...room.chatMessages.where((message) => message.isSystem).map((message) => message.text),
+      ...room.chatMessages
+          .where((message) => message.isSystem)
+          .map((message) => message.text),
     }..removeWhere((item) => item.trim().isEmpty);
     if (topics.isEmpty && uiPhrases.isEmpty) {
       return;
@@ -461,10 +527,9 @@ class _MultiplayerRoomScreenState extends ConsumerState<MultiplayerRoomScreen> {
 
     Future<void>.microtask(() async {
       if (topics.isNotEmpty) {
-        await ref.read(topicTranslationsProvider.notifier).ensureTopicsTranslated(
-              packId: room.packId,
-              topics: topics,
-            );
+        await ref
+            .read(topicTranslationsProvider.notifier)
+            .ensureTopicsTranslated(packId: room.packId, topics: topics);
       }
       if (uiPhrases.isNotEmpty) {
         warmUiPhrases(ref, uiPhrases);
@@ -477,11 +542,9 @@ class _MultiplayerRoomScreenState extends ConsumerState<MultiplayerRoomScreen> {
     required String topic,
     required SupportedLocale locale,
   }) {
-    return ref.read(topicTranslationsProvider.notifier).localizedTopic(
-          packId: packId,
-          topic: topic,
-          locale: locale,
-        );
+    return ref
+        .read(topicTranslationsProvider.notifier)
+        .localizedTopic(packId: packId, topic: topic, locale: locale);
   }
 
   int _remainingGuessSeconds(DateTime? phaseEndsAt) {
@@ -523,7 +586,6 @@ class _PhaseActionCard extends ConsumerWidget {
     required this.onGuessSelected,
     required this.onSuspectSelected,
     required this.onSubmitGuess,
-    required this.onSubmitVote,
     required this.onAdvance,
   });
 
@@ -535,7 +597,6 @@ class _PhaseActionCard extends ConsumerWidget {
   final ValueChanged<String> onGuessSelected;
   final ValueChanged<String> onSuspectSelected;
   final ValueChanged<String> onSubmitGuess;
-  final VoidCallback onSubmitVote;
   final VoidCallback onAdvance;
 
   @override
@@ -556,9 +617,11 @@ class _PhaseActionCard extends ConsumerWidget {
             Text(
               room.privateView.voteSubmitted
                   ? localizeUiPhrase(ref, 'تم إرسال تصويتك من هذا الهاتف.')
-                  : localizeUiPhrase(ref, 'هذا المكان يمثل شاشة التصويت الخاصة بلاعب واحد فقط.'),
+                  : localizeUiPhrase(
+                      ref,
+                      'هذا المكان يمثل شاشة التصويت الخاصة بلاعب واحد فقط.',
+                    ),
             ),
-            const SizedBox(height: 12),
             Text(
               '${localizeUiPhrase(ref, 'اختر')} ${room.round.voteSelectionLimit} '
               '${room.round.voteSelectionLimit == 1 ? localizeUiPhrase(ref, 'مشتبهًا واحدًا') : localizeUiPhrase(ref, 'مشتبهين')}',
@@ -569,27 +632,40 @@ class _PhaseActionCard extends ConsumerWidget {
               runSpacing: 10,
               children: room.players
                   .where((player) => player.id != room.currentPlayerId)
-                  .map(
-                    (player) => FilterChip(
-                      label: Text(player.name),
-                      selected: selectedSuspectIds.contains(player.id),
-                      onSelected: room.privateView.voteSubmitted
+                  .map((player) {
+                    final selectionIndex = selectedSuspectIds
+                        .toList(growable: false)
+                        .indexOf(player.id);
+                    final isSelected = selectionIndex >= 0;
+                    return FilterChip(
+                      label: Text(
+                        isSelected
+                            ? '${selectionIndex + 1}. ${player.name}'
+                            : player.name,
+                      ),
+                      selected: isSelected,
+                      onSelected: room.privateView.voteSubmitted || isSelected
                           ? null
                           : (_) => onSuspectSelected(player.id),
-                    ),
-                  )
+                    );
+                  })
                   .toList(),
             ),
             const SizedBox(height: 12),
-            BaraButton.primary(
-              label: room.privateView.voteSubmitted
+            LinearProgressIndicator(
+              value: room.privateView.voteSubmitted
+                  ? 1
+                  : selectedSuspectIds.length / room.round.voteSelectionLimit,
+              minHeight: 8,
+              borderRadius: BorderRadius.circular(99),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              room.privateView.voteSubmitted
                   ? localizeUiPhrase(ref, 'تم إرسال الصوت')
-                  : localizeUiPhrase(ref, 'إرسال صوتي'),
-              icon: Icons.how_to_vote_rounded,
-              onPressed: room.privateView.voteSubmitted ||
-                      selectedSuspectIds.length != room.round.voteSelectionLimit
-                  ? null
-                  : onSubmitVote,
+                  : 'تم تأكيد ${selectedSuspectIds.length} من ${room.round.voteSelectionLimit}. '
+                        'يُرسل التصويت تلقائيًا بعد آخر اختيار.',
+              textAlign: TextAlign.center,
             ),
           ] else if (phase == MultiplayerRoomPhase.outsiderGuess &&
               room.privateView.guessOptions.isNotEmpty) ...[
@@ -609,23 +685,57 @@ class _PhaseActionCard extends ConsumerWidget {
                 return ChoiceChip(
                   label: Text(localizedGuessOptions[topic] ?? topic),
                   selected: selectedGuess == topic,
-                  onSelected: (_) => onGuessSelected(topic),
+                  onSelected: (_) async {
+                    onGuessSelected(topic);
+                    final label = localizedGuessOptions[topic] ?? topic;
+                    final confirmed =
+                        await showDialog<bool>(
+                          context: context,
+                          builder: (dialogContext) {
+                            return AlertDialog(
+                              title: const Text('تأكيد التخمين'),
+                              content: Text('هل تريد اختيار "$label"؟'),
+                              actions: [
+                                TextButton(
+                                  onPressed: () =>
+                                      Navigator.of(dialogContext).pop(false),
+                                  child: const Text('إلغاء'),
+                                ),
+                                FilledButton(
+                                  onPressed: () =>
+                                      Navigator.of(dialogContext).pop(true),
+                                  child: const Text('تأكيد'),
+                                ),
+                              ],
+                            );
+                          },
+                        ) ??
+                        false;
+                    if (confirmed) {
+                      onSubmitGuess(topic);
+                    }
+                  },
                 );
               }).toList(),
             ),
-            const SizedBox(height: 12),
-            BaraButton.primary(
-              label: localizeUiPhrase(ref, 'أرسل التخمين النهائي'),
-              icon: Icons.lightbulb_rounded,
-              onPressed: selectedGuess == null ? null : () => onSubmitGuess(selectedGuess!),
-            ),
           ] else if (phase == MultiplayerRoomPhase.outsiderGuess) ...[
-            Text(localizeUiPhrase(ref, 'الهاتف الخاص ببرا السالفة فقط هو الذي يستقبل شاشة التخمين الآن.')),
+            Text(
+              localizeUiPhrase(
+                ref,
+                'الهاتف الخاص ببرا السالفة فقط هو الذي يستقبل شاشة التخمين الآن.',
+              ),
+            ),
           ] else ...[
             Text(
               isHost
-                  ? localizeUiPhrase(ref, 'هذا الزر يحاكي انتقال الخادم للمرحلة التالية داخل النموذج.')
-                  : localizeUiPhrase(ref, 'بانتظار بث الخادم للطور التالي في النسخة الحقيقية.'),
+                  ? localizeUiPhrase(
+                      ref,
+                      'هذا الزر يحاكي انتقال الخادم للمرحلة التالية داخل النموذج.',
+                    )
+                  : localizeUiPhrase(
+                      ref,
+                      'بانتظار بث الخادم للطور التالي في النسخة الحقيقية.',
+                    ),
             ),
           ],
           if (isHost && phase != MultiplayerRoomPhase.results) ...[
@@ -650,9 +760,7 @@ class _RoomLoadingState extends ConsumerWidget {
     return BaraScaffold(
       title: localizeUiPhrase(ref, 'الغرفة الحية'),
       showBackButton: true,
-      child: const Center(
-        child: CircularProgressIndicator(),
-      ),
+      child: const Center(child: CircularProgressIndicator()),
     );
   }
 }

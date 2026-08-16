@@ -8,7 +8,7 @@ class FakeMultiplayerRoomRepository implements MultiplayerRoomRepository {
   FakeMultiplayerRoomRepository({required this.clientId});
 
   final String clientId;
-  final Random _random = Random();
+  final Random _random = Random.secure();
   final Map<String, MultiplayerRoomState> _rooms = {};
   final Map<String, StreamController<MultiplayerRoomState>> _controllers = {};
   final Map<String, List<String>> _roomTopicPools = {};
@@ -31,7 +31,9 @@ class FakeMultiplayerRoomRepository implements MultiplayerRoomRepository {
       roomId,
       () => StreamController<MultiplayerRoomState>.broadcast(),
     );
-    yield* controller.stream.map((state) => _viewForPlayer(state, currentPlayerId));
+    yield* controller.stream.map(
+      (state) => _viewForPlayer(state, currentPlayerId),
+    );
   }
 
   @override
@@ -83,7 +85,10 @@ class FakeMultiplayerRoomRepository implements MultiplayerRoomRepository {
     _roomBannedClientIds[roomId] = <String>{};
     _roomVotes[roomId] = {};
     _roomGuesses[roomId] = {};
-    _controllers.putIfAbsent(roomId, () => StreamController<MultiplayerRoomState>.broadcast());
+    _controllers.putIfAbsent(
+      roomId,
+      () => StreamController<MultiplayerRoomState>.broadcast(),
+    );
     _emit(room);
     return _viewForPlayer(room, playerId);
   }
@@ -167,10 +172,10 @@ class FakeMultiplayerRoomRepository implements MultiplayerRoomRepository {
     );
     final topicPool = _roomTopicPools[roomId] ?? const <String>[];
     final topic = _pickTopic(topicPool, room.packId);
-    final outsiderIds = [...room.players]..shuffle(_random);
-    final selectedOutsiderIds = outsiderIds
+    final shuffledPlayerIds = room.players.map((player) => player.id).toList()
+      ..shuffle(_random);
+    final selectedOutsiderIds = shuffledPlayerIds
         .take(outsiderCount)
-        .map((player) => player.id)
         .toList(growable: false);
     _roomTopics[roomId] = topic;
     _roomVotes[roomId] = {};
@@ -205,9 +210,7 @@ class FakeMultiplayerRoomRepository implements MultiplayerRoomRepository {
   }
 
   @override
-  Future<void> seedDemoPlayers({
-    required String roomId,
-  }) async {
+  Future<void> seedDemoPlayers({required String roomId}) async {
     final room = _requireRoom(roomId);
     final demoPlayers = <MultiplayerPlayer>[
       const MultiplayerPlayer(
@@ -254,9 +257,7 @@ class FakeMultiplayerRoomRepository implements MultiplayerRoomRepository {
   }
 
   @override
-  Future<void> advancePrototypePhase({
-    required String roomId,
-  }) async {
+  Future<void> advancePrototypePhase({required String roomId}) async {
     final room = _requireRoom(roomId);
     final round = room.round;
     final nextPhase = switch (round.phase) {
@@ -266,7 +267,9 @@ class FakeMultiplayerRoomRepository implements MultiplayerRoomRepository {
       MultiplayerRoomPhase.discussion => MultiplayerRoomPhase.voting,
       MultiplayerRoomPhase.voting => MultiplayerRoomPhase.voteReveal,
       MultiplayerRoomPhase.voteReveal =>
-        round.outsiderIds.isNotEmpty ? MultiplayerRoomPhase.outsiderGuess : MultiplayerRoomPhase.results,
+        round.outsiderIds.isNotEmpty
+            ? MultiplayerRoomPhase.outsiderGuess
+            : MultiplayerRoomPhase.results,
       MultiplayerRoomPhase.outsiderGuess => MultiplayerRoomPhase.results,
       MultiplayerRoomPhase.results => MultiplayerRoomPhase.results,
     };
@@ -297,7 +300,9 @@ class FakeMultiplayerRoomRepository implements MultiplayerRoomRepository {
       throw StateError('Voting is not open.');
     }
     if (suspectIds.length != room.round.voteSelectionLimit) {
-      throw StateError('You must select ${room.round.voteSelectionLimit} suspects.');
+      throw StateError(
+        'You must select ${room.round.voteSelectionLimit} suspects.',
+      );
     }
     if (suspectIds.toSet().length != suspectIds.length) {
       throw StateError('Duplicate suspects are not allowed.');
@@ -367,10 +372,12 @@ class FakeMultiplayerRoomRepository implements MultiplayerRoomRepository {
       players: updatedPlayers,
       round: room.round.copyWith(
         phase: nextPhase,
-        activePlayerId: remainingGuessers.isEmpty ? null : remainingGuessers.first,
+        activePlayerId: remainingGuessers.isEmpty
+            ? null
+            : remainingGuessers.first,
         phaseEndsAt: remainingGuessers.isEmpty
             ? null
-            : DateTime.now().add(const Duration(seconds: 20)),
+            : DateTime.now().add(const Duration(seconds: 25)),
         statusLine: remainingGuessers.isEmpty
             ? 'تم إنهاء الجولة وإرسال النقاط للجميع.'
             : 'انتقل التخمين الآن إلى برا السالفة التالي.',
@@ -388,8 +395,9 @@ class FakeMultiplayerRoomRepository implements MultiplayerRoomRepository {
     required String playerId,
   }) async {
     final room = _requireRoom(roomId);
-    final remaining =
-        room.players.where((player) => player.id != playerId).toList(growable: false);
+    final remaining = room.players
+        .where((player) => player.id != playerId)
+        .toList(growable: false);
     if (remaining.isEmpty) {
       _rooms.remove(roomId);
       _roomTopicPools.remove(roomId);
@@ -546,7 +554,9 @@ class FakeMultiplayerRoomRepository implements MultiplayerRoomRepository {
           player
         else
           player.copyWith(
-            score: player.score + _voteDelta(votes[player.id] ?? const [], outsiderSet),
+            score:
+                player.score +
+                _voteDelta(votes[player.id] ?? const [], outsiderSet),
           ),
     ];
 
@@ -565,8 +575,12 @@ class FakeMultiplayerRoomRepository implements MultiplayerRoomRepository {
     );
   }
 
-  MultiplayerRoomState _viewForPlayer(MultiplayerRoomState room, String currentPlayerId) {
-    if (room.round.phase == MultiplayerRoomPhase.lobby || room.round.outsiderIds.isEmpty) {
+  MultiplayerRoomState _viewForPlayer(
+    MultiplayerRoomState room,
+    String currentPlayerId,
+  ) {
+    if (room.round.phase == MultiplayerRoomPhase.lobby ||
+        room.round.outsiderIds.isEmpty) {
       return room.copyWith(
         currentPlayerId: currentPlayerId,
         privateView: const MultiplayerPrivateView.empty(),
@@ -574,18 +588,22 @@ class FakeMultiplayerRoomRepository implements MultiplayerRoomRepository {
     }
 
     final topicPool = _roomTopicPools[room.roomId] ?? const <String>[];
-    final topic = _roomTopics[room.roomId] ?? _pickTopic(topicPool, room.packId);
+    final topic =
+        _roomTopics[room.roomId] ?? _pickTopic(topicPool, room.packId);
     final isOutsider = room.round.outsiderIds.contains(currentPlayerId);
     final guesses = _roomGuesses[room.roomId] ?? const <String, String>{};
     final votes = _roomVotes[room.roomId] ?? const <String, List<String>>{};
-    final canGuessNow = room.round.phase == MultiplayerRoomPhase.outsiderGuess &&
+    final canGuessNow =
+        room.round.phase == MultiplayerRoomPhase.outsiderGuess &&
         room.round.activePlayerId == currentPlayerId &&
         room.round.outsiderIds.contains(currentPlayerId);
 
     return room.copyWith(
       currentPlayerId: currentPlayerId,
       privateView: MultiplayerPrivateView(
-        role: isOutsider ? MultiplayerPlayerRole.outsider : MultiplayerPlayerRole.insider,
+        role: isOutsider
+            ? MultiplayerPlayerRole.outsider
+            : MultiplayerPlayerRole.insider,
         topicLabel: isOutsider ? null : topic,
         guessOptions: canGuessNow ? _guessOptions(topicPool, topic) : const [],
         voteSubmitted: votes.containsKey(currentPlayerId),
@@ -634,20 +652,25 @@ class FakeMultiplayerRoomRepository implements MultiplayerRoomRepository {
   }
 
   List<String> _guessOptions(List<String> topicPool, String topic) {
-    final shuffled = topicPool.where((item) => item != topic).toList(growable: true)
-      ..shuffle(_random);
-    return {topic, ...shuffled.take(14)}.toList(growable: false);
+    final shuffled =
+        topicPool.where((item) => item != topic).toList(growable: true)
+          ..shuffle(_random);
+    final options = {topic, ...shuffled.take(15)}.toList(growable: true);
+    options.shuffle(_random);
+    return options;
   }
 
   String _statusLineForPhase(MultiplayerRoomPhase phase) {
     return switch (phase) {
       MultiplayerRoomPhase.lobby => 'بانتظار اللاعبين',
       MultiplayerRoomPhase.privateReveal => 'الخادم يرسل الدور الخاص لكل هاتف.',
-      MultiplayerRoomPhase.clueTurns => 'كل لاعب يتكلم من مكانه مع ترتيب دور واضح.',
+      MultiplayerRoomPhase.clueTurns =>
+        'كل لاعب يتكلم من مكانه مع ترتيب دور واضح.',
       MultiplayerRoomPhase.discussion => 'النقاش حي بين كل الأجهزة.',
       MultiplayerRoomPhase.voting => 'التصويت خاص على كل هاتف.',
       MultiplayerRoomPhase.voteReveal => 'يتم الآن كشف نتيجة التصويت للجميع.',
-      MultiplayerRoomPhase.outsiderGuess => 'برا السالفة الناجي وحده يرى شاشة التخمين.',
+      MultiplayerRoomPhase.outsiderGuess =>
+        'برا السالفة الناجي وحده يرى شاشة التخمين.',
       MultiplayerRoomPhase.results => 'النقاط تمت مزامنتها للجميع.',
     };
   }

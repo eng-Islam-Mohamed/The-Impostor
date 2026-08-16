@@ -1,17 +1,9 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
 
-enum MultiplayerRoomVisibility {
-  privateRoom,
-  publicRoom,
-}
+enum MultiplayerRoomVisibility { privateRoom, publicRoom }
 
-enum MultiplayerRoomStatus {
-  lobby,
-  inProgress,
-  completed,
-  closed,
-}
+enum MultiplayerRoomStatus { lobby, inProgress, completed, closed }
 
 enum MultiplayerRoomPhase {
   lobby,
@@ -24,16 +16,9 @@ enum MultiplayerRoomPhase {
   results,
 }
 
-enum MultiplayerPlayerRole {
-  insider,
-  outsider,
-}
+enum MultiplayerPlayerRole { insider, outsider }
 
-enum MultiplayerConnectionState {
-  connected,
-  reconnecting,
-  disconnected,
-}
+enum MultiplayerConnectionState { connected, reconnecting, disconnected }
 
 int multiplayerMinimumPlayersForMode(String modeSlug) {
   switch (modeSlug) {
@@ -133,12 +118,12 @@ class MultiplayerPrivateView {
   });
 
   const MultiplayerPrivateView.empty()
-      : role = null,
-        topicLabel = null,
-        guessOptions = const [],
-        voteSubmitted = false,
-        guessedTopic = null,
-        submittedSuspectIds = const [];
+    : role = null,
+      topicLabel = null,
+      guessOptions = const [],
+      voteSubmitted = false,
+      guessedTopic = null,
+      submittedSuspectIds = const [];
 
   final MultiplayerPlayerRole? role;
   final String? topicLabel;
@@ -159,11 +144,17 @@ class MultiplayerPrivateView {
     List<String>? submittedSuspectIds,
   }) {
     return MultiplayerPrivateView(
-      role: identical(role, _sentinel) ? this.role : role as MultiplayerPlayerRole?,
-      topicLabel: identical(topicLabel, _sentinel) ? this.topicLabel : topicLabel as String?,
+      role: identical(role, _sentinel)
+          ? this.role
+          : role as MultiplayerPlayerRole?,
+      topicLabel: identical(topicLabel, _sentinel)
+          ? this.topicLabel
+          : topicLabel as String?,
       guessOptions: guessOptions ?? this.guessOptions,
       voteSubmitted: voteSubmitted ?? this.voteSubmitted,
-      guessedTopic: identical(guessedTopic, _sentinel) ? this.guessedTopic : guessedTopic as String?,
+      guessedTopic: identical(guessedTopic, _sentinel)
+          ? this.guessedTopic
+          : guessedTopic as String?,
       submittedSuspectIds: submittedSuspectIds ?? this.submittedSuspectIds,
     );
   }
@@ -187,18 +178,18 @@ class MultiplayerRoundState {
   });
 
   const MultiplayerRoundState.empty()
-      : roundNumber = 0,
-        phase = MultiplayerRoomPhase.lobby,
-        activePlayerId = null,
-        outsiderIds = const [],
-        survivingOutsiderIds = const [],
-        accusedPlayerIds = const [],
-        phaseEndsAt = null,
-        requiredVotes = 0,
-        submittedVotes = 0,
-        voteSelectionLimit = 1,
-        outsiderSurvived = false,
-        statusLine = 'بانتظار بدء الغرفة';
+    : roundNumber = 0,
+      phase = MultiplayerRoomPhase.lobby,
+      activePlayerId = null,
+      outsiderIds = const [],
+      survivingOutsiderIds = const [],
+      accusedPlayerIds = const [],
+      phaseEndsAt = null,
+      requiredVotes = 0,
+      submittedVotes = 0,
+      voteSelectionLimit = 1,
+      outsiderSurvived = false,
+      statusLine = 'بانتظار بدء الغرفة';
 
   final int roundNumber;
   final MultiplayerRoomPhase phase;
@@ -230,13 +221,15 @@ class MultiplayerRoundState {
     return MultiplayerRoundState(
       roundNumber: roundNumber ?? this.roundNumber,
       phase: phase ?? this.phase,
-      activePlayerId:
-          identical(activePlayerId, _sentinel) ? this.activePlayerId : activePlayerId as String?,
+      activePlayerId: identical(activePlayerId, _sentinel)
+          ? this.activePlayerId
+          : activePlayerId as String?,
       outsiderIds: outsiderIds ?? this.outsiderIds,
       survivingOutsiderIds: survivingOutsiderIds ?? this.survivingOutsiderIds,
       accusedPlayerIds: accusedPlayerIds ?? this.accusedPlayerIds,
-      phaseEndsAt:
-          identical(phaseEndsAt, _sentinel) ? this.phaseEndsAt : phaseEndsAt as DateTime?,
+      phaseEndsAt: identical(phaseEndsAt, _sentinel)
+          ? this.phaseEndsAt
+          : phaseEndsAt as DateTime?,
       requiredVotes: requiredVotes ?? this.requiredVotes,
       submittedVotes: submittedVotes ?? this.submittedVotes,
       voteSelectionLimit: voteSelectionLimit ?? this.voteSelectionLimit,
@@ -291,7 +284,8 @@ class MultiplayerRoomState {
   bool get isCurrentPlayerHost => currentPlayerId == hostPlayerId;
 
   bool get canStart {
-    if (!isCurrentPlayerHost || players.length < multiplayerMinimumPlayersForMode(modeSlug)) {
+    if (!isCurrentPlayerHost ||
+        players.length < multiplayerMinimumPlayersForMode(modeSlug)) {
       return false;
     }
     if (outsiderCount > multiplayerMaxOutsidersForPlayerCount(players.length)) {

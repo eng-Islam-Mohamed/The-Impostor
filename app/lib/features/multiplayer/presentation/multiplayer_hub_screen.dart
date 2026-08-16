@@ -76,13 +76,15 @@ class MultiplayerHubScreen extends ConsumerWidget {
                 BaraButton.primary(
                   label: localizeUiPhrase(ref, 'إنشاء غرفة'),
                   icon: Icons.add_home_work_rounded,
-                  onPressed: () => context.push(MultiplayerCreateRoomScreen.routePath),
+                  onPressed: () =>
+                      context.push(MultiplayerCreateRoomScreen.routePath),
                 ),
                 const SizedBox(height: 12),
                 BaraButton.secondary(
                   label: localizeUiPhrase(ref, 'الانضمام برمز'),
                   icon: Icons.meeting_room_rounded,
-                  onPressed: () => context.push(MultiplayerJoinRoomScreen.routePath),
+                  onPressed: () =>
+                      context.push(MultiplayerJoinRoomScreen.routePath),
                 ),
               ],
             ),
@@ -106,17 +108,26 @@ class MultiplayerHubScreen extends ConsumerWidget {
                   title: Text(localizeUiPhrase(ref, 'استخدام الخادم الحقيقي')),
                   subtitle: Text(
                     config.useLiveServer
-                        ? localizeUiPhrase(ref, 'سيتصل التطبيق بخادم حي يعمل عبر الإنترنت')
-                        : localizeUiPhrase(ref, 'سيبقى التطبيق على الوضع التجريبي المحلي'),
+                        ? localizeUiPhrase(
+                            ref,
+                            'سيتصل التطبيق بخادم حي يعمل عبر الإنترنت',
+                          )
+                        : localizeUiPhrase(
+                            ref,
+                            'سيبقى التطبيق على الوضع التجريبي المحلي',
+                          ),
                   ),
                 ),
                 const SizedBox(height: 8),
-                Text('${localizeUiPhrase(ref, 'الرابط الحالي')}: ${config.serverUrl}'),
+                Text(
+                  '${localizeUiPhrase(ref, 'الرابط الحالي')}: ${config.serverUrl}',
+                ),
                 const SizedBox(height: 12),
                 BaraButton.secondary(
                   label: localizeUiPhrase(ref, 'تعديل رابط الخادم'),
                   icon: Icons.edit_rounded,
-                  onPressed: () => _showServerUrlDialog(context, ref, config.serverUrl),
+                  onPressed: () =>
+                      _showServerUrlDialog(context, ref, config.serverUrl),
                 ),
               ],
             ),
@@ -133,9 +144,13 @@ class MultiplayerHubScreen extends ConsumerWidget {
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                   const SizedBox(height: 10),
-                  Text('${localizeUiPhrase(ref, 'الكود')}: ${activeRoom.roomCode}'),
+                  Text(
+                    '${localizeUiPhrase(ref, 'الكود')}: ${activeRoom.roomCode}',
+                  ),
                   const SizedBox(height: 6),
-                  Text('${localizeUiPhrase(ref, 'المرحلة')}: ${_phaseLabel(ref, activeRoom.round.phase)}'),
+                  Text(
+                    '${localizeUiPhrase(ref, 'المرحلة')}: ${_phaseLabel(ref, activeRoom.round.phase)}',
+                  ),
                   const SizedBox(height: 16),
                   BaraButton.secondary(
                     label: activeRoom.status == MultiplayerRoomStatus.lobby
@@ -168,7 +183,8 @@ class MultiplayerHubScreen extends ConsumerWidget {
                   BaraButton.secondary(
                     label: localizeUiPhrase(ref, 'مسح الخطأ'),
                     icon: Icons.refresh_rounded,
-                    onPressed: () => ref.read(multiplayerRoomProvider.notifier).clearError(),
+                    onPressed: () =>
+                        ref.read(multiplayerRoomProvider.notifier).clearError(),
                   ),
                 ],
               ),
@@ -181,20 +197,26 @@ class MultiplayerHubScreen extends ConsumerWidget {
               children: [
                 Text(localizeUiPhrase(ref, 'ما تم تجهيزه الآن')),
                 const SizedBox(height: 10),
-                Text(localizeUiPhrase(
-                  ref,
-                  'نماذج غرف، لاعبين، مراحل، وعقود أحداث جاهزة للربط مع Socket.IO',
-                )),
+                Text(
+                  localizeUiPhrase(
+                    ref,
+                    'نماذج غرف، لاعبين، مراحل، وعقود أحداث جاهزة للربط مع Socket.IO',
+                  ),
+                ),
                 const SizedBox(height: 6),
-                Text(localizeUiPhrase(
-                  ref,
-                  'ردهة حية مع حالة الجاهزية، المضيف، والمزامنة الشكلية',
-                )),
+                Text(
+                  localizeUiPhrase(
+                    ref,
+                    'ردهة حية مع حالة الجاهزية، المضيف، والمزامنة الشكلية',
+                  ),
+                ),
                 const SizedBox(height: 6),
-                Text(localizeUiPhrase(
-                  ref,
-                  'شاشة جولة أولية تُظهر كيف ستبقى المعلومة الخاصة على الهاتف نفسه',
-                )),
+                Text(
+                  localizeUiPhrase(
+                    ref,
+                    'شاشة جولة أولية تُظهر كيف ستبقى المعلومة الخاصة على الهاتف نفسه',
+                  ),
+                ),
               ],
             ),
           ),
@@ -249,8 +271,14 @@ class MultiplayerHubScreen extends ConsumerWidget {
       MultiplayerRoomPhase.clueTurns => localizeUiPhrase(ref, 'جولة التلميحات'),
       MultiplayerRoomPhase.discussion => localizeUiPhrase(ref, 'النقاش'),
       MultiplayerRoomPhase.voting => localizeUiPhrase(ref, 'التصويت الخاص'),
-      MultiplayerRoomPhase.voteReveal => localizeUiPhrase(ref, 'كشف نتائج التصويت'),
-      MultiplayerRoomPhase.outsiderGuess => localizeUiPhrase(ref, 'تخمين برا السالفة'),
+      MultiplayerRoomPhase.voteReveal => localizeUiPhrase(
+        ref,
+        'كشف نتائج التصويت',
+      ),
+      MultiplayerRoomPhase.outsiderGuess => localizeUiPhrase(
+        ref,
+        'تخمين برا السالفة',
+      ),
       MultiplayerRoomPhase.results => localizeUiPhrase(ref, 'النتيجة النهائية'),
     };
   }

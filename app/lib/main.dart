@@ -1,40 +1,48 @@
 import 'package:bara_alsalfa/app/app.dart';
-import 'package:bara_alsalfa/core/i18n/topic_translation_controller.dart';
-import 'package:bara_alsalfa/core/audio/app_audio.dart';
-import 'package:bara_alsalfa/data/local/local_multiplayer_config_store.dart';
-import 'package:bara_alsalfa/data/local/local_subject_store.dart';
+import 'package:bara_alsalfa/data/local/local_game_session_store.dart';
+import 'package:bara_alsalfa/data/local/local_saved_groups_store.dart';
 import 'package:bara_alsalfa/data/local/local_settings_store.dart';
-import 'package:bara_alsalfa/data/local/local_topic_translation_store.dart';
+import 'package:bara_alsalfa/data/local/local_subject_store.dart';
 import 'package:bara_alsalfa/data/repositories/local_category_repository.dart';
-import 'package:bara_alsalfa/features/multiplayer/application/multiplayer_config_controller.dart';
+import 'package:bara_alsalfa/features/groups/application/saved_groups_controller.dart';
 import 'package:bara_alsalfa/features/profile/presentation/settings_controller.dart';
+import 'package:bara_alsalfa/features/round/application/game_session_controller.dart';
+import 'package:bara_alsalfa/firebase_options.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final settingsStore = LocalSettingsStore();
-  final initialSettings = await settingsStore.load();
-  await AppAudio.instance.initialize(enabled: initialSettings.soundEnabled);
+  final sessionStore = LocalGameSessionStore();
   final subjectsStore = LocalSubjectsStore();
-  final initialCategoryPacks = await subjectsStore.load();
-  final topicTranslationsStore = LocalTopicTranslationsStore();
-  final initialTopicTranslations = await topicTranslationsStore.load();
-  final multiplayerConfigStore = LocalMultiplayerConfigStore();
-  final initialMultiplayerConfig = await multiplayerConfigStore.load();
-  await multiplayerConfigStore.save(initialMultiplayerConfig);
-
+  final groupsStore = LocalSavedGroupsStore();
+  final settings = await settingsStore.load();
+  final savedSession = await sessionStore.load();
+  final categoryPacks = await subjectsStore.load();
+  final savedGroups = await groupsStore.load();
+  try {
+    if (!kIsWeb) {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+    }
+  } catch (e) {
+    debugPrint('Firebase initialization skipped: $e');
+  }
   runApp(
     ProviderScope(
       overrides: [
         settingsStoreProvider.overrideWithValue(settingsStore),
-        initialAppSettingsProvider.overrideWithValue(initialSettings),
+        initialAppSettingsProvider.overrideWithValue(settings),
+        gameSessionStoreProvider.overrideWithValue(sessionStore),
+        initialGameSessionProvider.overrideWithValue(savedSession),
         subjectsStoreProvider.overrideWithValue(subjectsStore),
-        initialCategoryPacksProvider.overrideWithValue(initialCategoryPacks),
-        topicTranslationsStoreProvider.overrideWithValue(topicTranslationsStore),
-        initialTopicTranslationsProvider.overrideWithValue(initialTopicTranslations),
-        multiplayerConfigStoreProvider.overrideWithValue(multiplayerConfigStore),
-        initialMultiplayerConfigProvider.overrideWithValue(initialMultiplayerConfig),
+        initialCategoryPacksProvider.overrideWithValue(categoryPacks),
+        savedGroupsStoreProvider.overrideWithValue(groupsStore),
+        initialSavedGroupsProvider.overrideWithValue(savedGroups),
       ],
       child: const BaraApp(),
     ),

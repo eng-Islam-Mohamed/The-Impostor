@@ -1,29 +1,33 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:bara_alsalfa/data/local/app_directories.dart';
+
 abstract class TopicTranslationsStore {
   Future<Map<String, Map<String, String>>> load();
   Future<void> save(Map<String, Map<String, String>> translations);
 }
 
 class LocalTopicTranslationsStore implements TopicTranslationsStore {
-  LocalTopicTranslationsStore({String? filePath})
-      : _file = File(
-          filePath ??
-              '${Directory.systemTemp.path}${Platform.pathSeparator}'
-                  'bara_alsalfa_topic_translations.json',
-        );
+  LocalTopicTranslationsStore({String? filePath}) : _filePath = filePath;
 
-  final File _file;
+  static const _fileName = 'bara_alsalfa_topic_translations.json';
+
+  final String? _filePath;
+
+  Future<File> get _file {
+    return AppDirectories.documentsFile(_fileName, overridePath: _filePath);
+  }
 
   @override
   Future<Map<String, Map<String, String>>> load() async {
     try {
-      if (!await _file.exists()) {
+      final file = await _file;
+      if (!await file.exists()) {
         return const {};
       }
 
-      final content = await _file.readAsString();
+      final content = await file.readAsString();
       if (content.trim().isEmpty) {
         return const {};
       }
@@ -44,7 +48,8 @@ class LocalTopicTranslationsStore implements TopicTranslationsStore {
 
   @override
   Future<void> save(Map<String, Map<String, String>> translations) async {
-    await _file.parent.create(recursive: true);
-    await _file.writeAsString(jsonEncode(translations));
+    final file = await _file;
+    await file.parent.create(recursive: true);
+    await file.writeAsString(jsonEncode(translations), flush: true);
   }
 }

@@ -3,7 +3,7 @@ import 'package:bara_alsalfa/domain/models/multiplayer_client_config.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final multiplayerConfigStoreProvider = Provider<MultiplayerConfigStore>(
-  (ref) => throw UnimplementedError('MultiplayerConfigStore override missing.'),
+  (ref) => LocalMultiplayerConfigStore(),
 );
 
 final initialMultiplayerConfigProvider = Provider<MultiplayerClientConfig>(
@@ -41,5 +41,5 @@ class MultiplayerConfigController extends Notifier<MultiplayerClientConfig> {
 
 final multiplayerClientConfigProvider =
     NotifierProvider<MultiplayerConfigController, MultiplayerClientConfig>(
-  MultiplayerConfigController.new,
-);
+      MultiplayerConfigController.new,
+    );

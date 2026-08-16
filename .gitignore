@@ -10,3 +10,5 @@ server/node_modules/
 server/dist/
 hs_err_pid*.log
 replay_pid*.log
+*.apk
+لقطات الشاشة/

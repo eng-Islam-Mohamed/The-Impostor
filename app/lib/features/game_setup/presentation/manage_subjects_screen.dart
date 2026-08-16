@@ -16,16 +16,21 @@ class ManageSubjectsScreen extends ConsumerStatefulWidget {
   static const routePath = '/setup/manage-subjects';
 
   @override
-  ConsumerState<ManageSubjectsScreen> createState() => _ManageSubjectsScreenState();
+  ConsumerState<ManageSubjectsScreen> createState() =>
+      _ManageSubjectsScreenState();
 }
 
 class _ManageSubjectsScreenState extends ConsumerState<ManageSubjectsScreen> {
   final _topicController = TextEditingController();
+  final _sectionTitleController = TextEditingController();
+  final _sectionSubtitleController = TextEditingController();
   String? _selectedPackId;
 
   @override
   void dispose() {
     _topicController.dispose();
+    _sectionTitleController.dispose();
+    _sectionSubtitleController.dispose();
     super.dispose();
   }
 
@@ -52,21 +57,31 @@ class _ManageSubjectsScreenState extends ConsumerState<ManageSubjectsScreen> {
         padding: const EdgeInsets.fromLTRB(24, 18, 24, 32),
         children: [
           Text(
-            localizeUiPhrase(ref, 'من هنا تقدر تضيف أو تحذف السوالف التي يمكن أن تظهر داخل الجولة.'),
+            localizeUiPhrase(
+              ref,
+              'من هنا تقدر تضيف أو تحذف السوالف التي يمكن أن تظهر داخل الجولة.',
+            ),
             style: Theme.of(context).textTheme.bodyLarge,
           ),
           const SizedBox(height: 18),
           Wrap(
             spacing: 10,
             runSpacing: 10,
-            children: packs.map((pack) {
-              final isSelected = selectedPack.id == pack.id;
-              return ChoiceChip(
-                selected: isSelected,
-                label: Text(localizedPackTitle(pack, settings.locale)),
-                onSelected: (_) => setState(() => _selectedPackId = pack.id),
-              );
-            }).toList(),
+            children: [
+              ...packs.map((pack) {
+                final isSelected = selectedPack.id == pack.id;
+                return ChoiceChip(
+                  selected: isSelected,
+                  label: Text(localizedPackTitle(pack, settings.locale)),
+                  onSelected: (_) => setState(() => _selectedPackId = pack.id),
+                );
+              }),
+              ActionChip(
+                avatar: const Icon(Icons.add_rounded),
+                label: const Text('قسم جديد'),
+                onPressed: () => _showCreateSectionDialog(context),
+              ),
+            ],
           ),
           const SizedBox(height: 18),
           GlowCard(
@@ -114,7 +129,10 @@ class _ManageSubjectsScreenState extends ConsumerState<ManageSubjectsScreen> {
                   (topic) => Padding(
                     padding: const EdgeInsets.only(bottom: 10),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 10,
+                      ),
                       decoration: BoxDecoration(
                         color: Theme.of(context)
                             .colorScheme
@@ -140,13 +158,18 @@ class _ManageSubjectsScreenState extends ConsumerState<ManageSubjectsScreen> {
                                   .removeTopic(selectedPack.id, topic);
                               await ref
                                   .read(topicTranslationsProvider.notifier)
-                                  .removeTranslations(packId: selectedPack.id, topic: topic);
+                                  .removeTranslations(
+                                    packId: selectedPack.id,
+                                    topic: topic,
+                                  );
                               if (!context.mounted) {
                                 return;
                               }
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
-                                  content: Text('${localizeUiPhrase(ref, 'تم حذف')} "$topic"'),
+                                  content: Text(
+                                    '${localizeUiPhrase(ref, 'تم حذف')} "$topic"',
+                                  ),
                                 ),
                               );
                             },
@@ -193,6 +216,61 @@ class _ManageSubjectsScreenState extends ConsumerState<ManageSubjectsScreen> {
     }
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('${localizeUiPhrase(ref, 'تمت إضافة')} "$text"')),
+    );
+  }
+
+  Future<void> _showCreateSectionDialog(BuildContext context) async {
+    _sectionTitleController.clear();
+    _sectionSubtitleController.clear();
+
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('إنشاء قسم جديد'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: _sectionTitleController,
+                autofocus: true,
+                decoration: const InputDecoration(hintText: 'اسم القسم'),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _sectionSubtitleController,
+                decoration: const InputDecoration(hintText: 'وصف اختياري'),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text(AppLocalizations.of(dialogContext).cancel),
+            ),
+            FilledButton(
+              onPressed: () async {
+                final title = _sectionTitleController.text.trim();
+                if (title.isEmpty) {
+                  return;
+                }
+                final pack = await ref
+                    .read(categoryLibraryProvider.notifier)
+                    .addPack(
+                      title: title,
+                      subtitle: _sectionSubtitleController.text,
+                    );
+                if (!mounted || !dialogContext.mounted) {
+                  return;
+                }
+                setState(() => _selectedPackId = pack.id);
+                Navigator.of(dialogContext).pop();
+              },
+              child: const Text('إنشاء'),
+            ),
+          ],
+        );
+      },
     );
   }
 }

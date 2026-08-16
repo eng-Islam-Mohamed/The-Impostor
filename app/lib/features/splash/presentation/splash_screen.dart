@@ -71,10 +71,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(36),
                   gradient: LinearGradient(
-                    colors: [
-                      colorScheme.primary,
-                      colorScheme.secondary,
-                    ],
+                    colors: [colorScheme.primary, colorScheme.secondary],
                   ),
                   boxShadow: [
                     BoxShadow(
@@ -88,24 +85,24 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                 child: Text(
                   'برا',
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        color: colorScheme.onPrimary,
-                        fontWeight: FontWeight.w700,
-                      ),
+                    color: colorScheme.onPrimary,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
               const SizedBox(height: 28),
               Text(
                 'برا السالفة',
-                style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.displaySmall?.copyWith(fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 10),
               Text(
                 localizeUiPhrase(ref, 'Party tension, Arabic style.'),
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: colorScheme.onSurface.withValues(alpha: 0.7),
-                    ),
+                  color: colorScheme.onSurface.withValues(alpha: 0.7),
+                ),
               ),
             ],
           ),

@@ -8,26 +8,28 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('shows Arabic home screen after splash when onboarding is complete',
-      (tester) async {
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          settingsStoreProvider.overrideWithValue(_FakeSettingsStore()),
-          initialAppSettingsProvider.overrideWithValue(
-            const AppSettings.defaults().copyWith(onboardingSeen: true),
-          ),
-        ],
-        child: const BaraApp(),
-      ),
-    );
+  testWidgets(
+    'shows Arabic home screen after splash when onboarding is complete',
+    (tester) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            settingsStoreProvider.overrideWithValue(_FakeSettingsStore()),
+            initialAppSettingsProvider.overrideWithValue(
+              const AppSettings.defaults().copyWith(onboardingSeen: true),
+            ),
+          ],
+          child: const BaraApp(),
+        ),
+      );
 
-    await tester.pump(const Duration(milliseconds: 1700));
-    await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 1700));
+      await tester.pumpAndSettle();
 
-    expect(find.text('برا السالفة'), findsOneWidget);
-    expect(find.text('ابدأ لعبة جديدة'), findsOneWidget);
-  });
+      expect(find.text('برا السالفة'), findsOneWidget);
+      expect(find.text('ابدأ لعبة جديدة'), findsOneWidget);
+    },
+  );
 }
 
 class _FakeSettingsStore implements SettingsStore {

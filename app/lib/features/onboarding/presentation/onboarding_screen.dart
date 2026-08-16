@@ -34,22 +34,20 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     ),
     (
       title: 'ناقشوا ثم صوّتوا',
-      body: 'بعد جولة التلميحات يبدأ الشك، وفي النهاية تصويت واحد يفضح الحقيقة.',
+      body:
+          'بعد جولة التلميحات يبدأ الشك، وفي النهاية تصويت واحد يفضح الحقيقة.',
       icon: Icons.how_to_vote_rounded,
     ),
   ];
 
   @override
   Widget build(BuildContext context) {
-    warmUiPhrases(
-      ref,
-      [
-        for (final slide in _slides) ...[slide.title, slide.body],
-        'تخطي',
-        'ابدأ اللعب',
-        'التالي',
-      ],
-    );
+    warmUiPhrases(ref, [
+      for (final slide in _slides) ...[slide.title, slide.body],
+      'تخطي',
+      'ابدأ اللعب',
+      'التالي',
+    ]);
     return BaraScaffold(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
@@ -60,7 +58,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               alignment: Alignment.centerRight,
               child: TextButton(
                 onPressed: () async {
-                  await ref.read(appSettingsProvider.notifier).completeOnboarding();
+                  await ref
+                      .read(appSettingsProvider.notifier)
+                      .completeOnboarding();
                   if (context.mounted) {
                     context.go(HomeScreen.routePath);
                   }
@@ -81,7 +81,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(slide.icon, size: 64, color: Theme.of(context).colorScheme.primary),
+                          Icon(
+                            slide.icon,
+                            size: 64,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
                           const SizedBox(height: 24),
                           Text(
                             localizeUiPhrase(ref, slide.title),
@@ -113,7 +117,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   decoration: BoxDecoration(
                     color: _page == index
                         ? Theme.of(context).colorScheme.primary
-                        : Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+                        : Theme.of(
+                            context,
+                          ).colorScheme.primary.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(999),
                   ),
                 ),
@@ -127,7 +133,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               icon: Icons.arrow_back_rounded,
               onPressed: () async {
                 if (_page == _slides.length - 1) {
-                  await ref.read(appSettingsProvider.notifier).completeOnboarding();
+                  await ref
+                      .read(appSettingsProvider.notifier)
+                      .completeOnboarding();
                   if (context.mounted) {
                     context.go(HomeScreen.routePath);
                   }

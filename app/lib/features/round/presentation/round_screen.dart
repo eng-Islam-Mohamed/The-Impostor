@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:collection/collection.dart';
 import 'package:bara_alsalfa/core/audio/app_audio.dart';
 import 'package:bara_alsalfa/core/i18n/topic_translation_controller.dart';
 import 'package:bara_alsalfa/core/i18n/ui_phrase_localizer.dart';
@@ -8,6 +9,7 @@ import 'package:bara_alsalfa/core/widgets/bara_scaffold.dart';
 import 'package:bara_alsalfa/core/widgets/glow_card.dart';
 import 'package:bara_alsalfa/core/widgets/player_avatar.dart';
 import 'package:bara_alsalfa/domain/models/app_settings.dart';
+import 'package:bara_alsalfa/domain/models/round_phase.dart';
 import 'package:bara_alsalfa/features/home/presentation/home_screen.dart';
 import 'package:bara_alsalfa/features/profile/presentation/settings_controller.dart';
 import 'package:bara_alsalfa/features/results/presentation/results_screen.dart';
@@ -19,8 +21,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 class RoundScreen extends ConsumerStatefulWidget {
-  const RoundScreen({super.key});
+  const RoundScreen({super.key, this.initialRevealed = false});
 
+  final bool initialRevealed;
   static const routePath = '/round';
 
   @override
@@ -28,9 +31,10 @@ class RoundScreen extends ConsumerStatefulWidget {
 }
 
 class _RoundScreenState extends ConsumerState<RoundScreen> {
-  static const int _outsiderGuessSeconds = 20;
+  static const int _defaultOutsiderGuessSeconds = 25;
 
-  bool _revealed = false;
+  late bool _revealed = widget.initialRevealed;
+  late bool _hasRevealedCurrent = widget.initialRevealed;
   final Set<String> _selectedSuspectIds = <String>{};
   String? _selectedTopicGuess;
   Timer? _discussionTimer;
@@ -53,40 +57,37 @@ class _RoundScreenState extends ConsumerState<RoundScreen> {
     final session = ref.watch(gameSessionProvider);
     final settings = ref.watch(appSettingsProvider);
     ref.watch(topicTranslationsProvider);
-    warmUiPhrases(
-      ref,
-      const [
-        'لا توجد جولة نشطة',
-        'العودة للرئيسية',
-        'مرر الجوال إلى',
-        'اضغط مطولًا على البطاقة حتى يظهر الدور بشكل خاص.',
-        'دورك الآن',
-        'اضغط مطولًا للكشف',
-        'اسمع التلميحات واندمج بدون ما تنكشف.',
-        'احتفظ بالسالفة لنفسك ولا تذكرها حرفيًا.',
-        'أمسك الجهاز قريبًا منك فقط.',
-        'دور',
-        'قل تلميحًا قصيرًا أو كلمة ذكية بدون ذكر السالفة نفسها.',
-        'الدورة',
-        'اللاعب',
-        'ابدأ النقاش',
-        'وقت النقاش',
-        'ناقشوا بحرية: من يبدو خارج السالفة؟',
-        'ثانية',
-        'إيقاف',
-        'ابدأ المؤقت',
-        'ابدأ التصويت',
-        'اختر المشتبهين بعدد برا السالفة. لا يمكنك التصويت لنفسك.',
-        'عدد الأصوات المتاحة',
+    warmUiPhrases(ref, const [
+      'لا توجد جولة نشطة',
+      'العودة للرئيسية',
+      'مرر الجوال إلى',
+      'اضغط مطولًا على البطاقة حتى يظهر الدور بشكل خاص.',
+      'دورك الآن',
+      'اضغط مطولًا للكشف',
+      'اسمع التلميحات واندمج بدون ما تنكشف.',
+      'احتفظ بالسالفة لنفسك ولا تذكرها حرفيًا.',
+      'أمسك الجهاز قريبًا منك فقط.',
+      'دور',
+      'قل تلميحًا قصيرًا أو كلمة ذكية بدون ذكر السالفة نفسها.',
+      'الدورة',
+      'اللاعب',
+      'ابدأ النقاش',
+      'وقت النقاش',
+      'ناقشوا بحرية: من يبدو خارج السالفة؟',
+      'ثانية',
+      'إيقاف',
+      'ابدأ المؤقت',
+      'ابدأ التصويت',
+      'اختر المشتبهين بعدد برا السالفة. لا يمكنك التصويت لنفسك.',
+      'عدد الأصوات المتاحة',
       'لحظة حاسمة...',
-        'يتم الآن كشف أصحاب برا السالفة وتجهيز التحدي الأخير لهم واحدًا تلو الآخر.',
-        'يتم الآن كشف برا السالفة وتجهيز التحدي الأخير.',
-        'اختر السالفة الصحيحة من بين 15 خيارًا قبل انتهاء الوقت.',
-        'جدار الاختيارات',
-        'اختر بسرعة. إذا انتهى الوقت تُسجل إجابة خاطئة تلقائيًا.',
-        'انتهى الوقت',
-      ],
-    );
+      'يتم الآن كشف أصحاب برا السالفة وتجهيز التحدي الأخير لهم واحدًا تلو الآخر.',
+      'يتم الآن كشف برا السالفة وتجهيز التحدي الأخير.',
+      'اختر السالفة الصحيحة قبل انتهاء الوقت.',
+      'جدار الاختيارات',
+      'اختر بسرعة. إذا انتهى الوقت تُسجل إجابة خاطئة تلقائيًا.',
+      'انتهى الوقت',
+    ]);
     _warmRoundTranslations(session, settings.locale);
     final l10n = AppLocalizations.of(context);
 
@@ -111,7 +112,7 @@ class _RoundScreenState extends ConsumerState<RoundScreen> {
       if (_armedOutsiderGuessIndex != session.outsiderGuessIndex) {
         _outsiderGuessTimer?.cancel();
         _outsiderGuessTimer = null;
-        _outsiderRemainingSeconds = _outsiderGuessSeconds;
+        _outsiderRemainingSeconds = _guessDurationFor(session);
         _selectedTopicGuess = null;
         _armedOutsiderGuessIndex = null;
       }
@@ -119,7 +120,7 @@ class _RoundScreenState extends ConsumerState<RoundScreen> {
     } else {
       _outsiderGuessTimer?.cancel();
       _outsiderGuessTimer = null;
-      _outsiderRemainingSeconds = _outsiderGuessSeconds;
+      _outsiderRemainingSeconds = _defaultOutsiderGuessSeconds;
       _armedOutsiderGuessIndex = null;
       _selectedTopicGuess = null;
     }
@@ -163,12 +164,19 @@ class _RoundScreenState extends ConsumerState<RoundScreen> {
           _PhaseHeader(phase: session.phase),
           const SizedBox(height: 18),
           switch (session.phase) {
-            RoundPhase.reveal => _buildRevealPhase(context, session, settings.hapticsEnabled),
+            RoundPhase.reveal => _buildRevealPhase(
+              context,
+              session,
+              settings.hapticsEnabled,
+            ),
             RoundPhase.clueTurns => _buildCluePhase(context, session),
             RoundPhase.discussion => _buildDiscussionPhase(context, session),
             RoundPhase.voting => _buildVotingPhase(context, session),
             RoundPhase.suspense => _buildSuspensePhase(context, session),
-            RoundPhase.outsiderGuess => _buildOutsiderGuessPhase(context, session),
+            RoundPhase.outsiderGuess => _buildOutsiderGuessPhase(
+              context,
+              session,
+            ),
             RoundPhase.results => const SizedBox.shrink(),
           },
         ],
@@ -198,7 +206,12 @@ class _RoundScreenState extends ConsumerState<RoundScreen> {
                 style: Theme.of(context).textTheme.headlineSmall,
               ),
               const SizedBox(height: 10),
-              Text(localizeUiPhrase(ref, 'اضغط مطولًا على البطاقة حتى يظهر الدور بشكل خاص.')),
+              Text(
+                localizeUiPhrase(
+                  ref,
+                  'اضغط مطولًا على البطاقة حتى يظهر الدور بشكل خاص.',
+                ),
+              ),
             ],
           ),
         ),
@@ -208,7 +221,18 @@ class _RoundScreenState extends ConsumerState<RoundScreen> {
             if (hapticsEnabled) {
               await HapticFeedback.mediumImpact();
             }
-            setState(() => _revealed = true);
+            setState(() {
+              _revealed = true;
+              _hasRevealedCurrent = true;
+            });
+          },
+          onLongPressEnd: (_) {
+            if (!mounted) return;
+            setState(() => _revealed = false);
+          },
+          onLongPressCancel: () {
+            if (!mounted) return;
+            setState(() => _revealed = false);
           },
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 220),
@@ -220,9 +244,10 @@ class _RoundScreenState extends ConsumerState<RoundScreen> {
                 begin: Alignment.topRight,
                 end: Alignment.bottomLeft,
                 colors: _revealed
-                    ? assignment.isOutsider
-                        ? const [Color(0xFFF06A5F), Color(0xFFD14E44)]
-                        : const [Color(0xFF0F8F78), Color(0xFF43C0A4)]
+                    ? [
+                        Theme.of(context).colorScheme.primary,
+                        Theme.of(context).colorScheme.tertiary,
+                      ]
                     : [
                         Theme.of(context).colorScheme.surface,
                         Theme.of(context).colorScheme.surfaceContainerHighest,
@@ -230,7 +255,9 @@ class _RoundScreenState extends ConsumerState<RoundScreen> {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.14),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.primary.withValues(alpha: 0.14),
                   blurRadius: 32,
                   offset: const Offset(0, 18),
                 ),
@@ -244,33 +271,66 @@ class _RoundScreenState extends ConsumerState<RoundScreen> {
                       ? localizeUiPhrase(ref, 'دورك الآن')
                       : localizeUiPhrase(ref, 'اضغط مطولًا للكشف'),
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        color: _revealed ? Colors.white : null,
-                      ),
+                    color: _revealed ? Colors.white : null,
+                  ),
                 ),
                 const SizedBox(height: 22),
                 Text(
                   _revealed
                       ? assignment.isOutsider
-                          ? AppLocalizations.of(context).youAreOutsider
-                          : _localizedTopic(session.selectedPackId, assignment.topic)
+                            ? AppLocalizations.of(context).youAreOutsider
+                            : _localizedTopic(
+                                session.selectedPackId,
+                                assignment.topic,
+                              )
                       : '••••••',
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                        color: _revealed ? Colors.white : Theme.of(context).colorScheme.primary,
-                        fontWeight: FontWeight.w700,
-                      ),
+                    color: _revealed
+                        ? Colors.white
+                        : Theme.of(context).colorScheme.primary,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
+                if (_revealed &&
+                    assignment.isOutsider &&
+                    session.outsidersKnowEachOther) ...[
+                  const SizedBox(height: 14),
+                  _RevealInfoPill(
+                    icon: Icons.groups_rounded,
+                    text: _knownOutsiderNames(session, assignment.playerId),
+                  ),
+                ],
+                if (_revealed &&
+                    session.powerCards.containsKey(assignment.playerId)) ...[
+                  const SizedBox(height: 14),
+                  _RevealInfoPill(
+                    icon: Icons.auto_awesome_rounded,
+                    text: _powerCardLabel(
+                      session.powerCards[assignment.playerId]!,
+                      session,
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 16),
                 Text(
                   _revealed
                       ? assignment.isOutsider
-                          ? localizeUiPhrase(ref, 'اسمع التلميحات واندمج بدون ما تنكشف.')
-                          : localizeUiPhrase(ref, 'احتفظ بالسالفة لنفسك ولا تذكرها حرفيًا.')
+                            ? localizeUiPhrase(
+                                ref,
+                                'اسمع التلميحات واندمج بدون ما تنكشف.',
+                              )
+                            : localizeUiPhrase(
+                                ref,
+                                'احتفظ بالسالفة لنفسك ولا تذكرها حرفيًا.',
+                              )
                       : localizeUiPhrase(ref, 'أمسك الجهاز قريبًا منك فقط.'),
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: _revealed ? Colors.white.withValues(alpha: 0.9) : null,
-                      ),
+                    color: _revealed
+                        ? Colors.white.withValues(alpha: 0.9)
+                        : null,
+                  ),
                 ),
                 const SizedBox(height: 20),
               ],
@@ -283,9 +343,12 @@ class _RoundScreenState extends ConsumerState<RoundScreen> {
               ? AppLocalizations.of(context).cluePhase
               : AppLocalizations.of(context).next,
           icon: Icons.arrow_back_rounded,
-          onPressed: _revealed
+          onPressed: (_revealed || _hasRevealedCurrent)
               ? () {
-                  setState(() => _revealed = false);
+                  setState(() {
+                    _revealed = false;
+                    _hasRevealedCurrent = false;
+                  });
                   ref.read(gameSessionProvider.notifier).advanceReveal();
                 }
               : null,
@@ -309,7 +372,10 @@ class _RoundScreenState extends ConsumerState<RoundScreen> {
               ),
               const SizedBox(height: 10),
               Text(
-                localizeUiPhrase(ref, 'قل تلميحًا قصيرًا أو كلمة ذكية بدون ذكر السالفة نفسها.'),
+                localizeUiPhrase(
+                  ref,
+                  'قل تلميحًا قصيرًا أو كلمة ذكية بدون ذكر السالفة نفسها.',
+                ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 18),
@@ -325,7 +391,7 @@ class _RoundScreenState extends ConsumerState<RoundScreen> {
                   ),
                   Chip(
                     label: Text(
-                      '${localizeUiPhrase(ref, 'اللاعب')} ${session.clueIndex + 1}/${session.players.length}',
+                      '${localizeUiPhrase(ref, 'اللاعب')} ${session.clueIndex + 1}/${session.activePlayers.length}',
                     ),
                   ),
                 ],
@@ -337,7 +403,7 @@ class _RoundScreenState extends ConsumerState<RoundScreen> {
         Wrap(
           spacing: 10,
           runSpacing: 10,
-          children: session.players.asMap().entries.map((entry) {
+          children: session.activePlayers.asMap().entries.map((entry) {
             final index = entry.key;
             final item = entry.value;
             final isActive = index == session.clueIndex;
@@ -350,7 +416,9 @@ class _RoundScreenState extends ConsumerState<RoundScreen> {
               ),
               label: Text(item.name),
               backgroundColor: isActive
-                  ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.15)
+                  ? Theme.of(
+                      context,
+                    ).colorScheme.primary.withValues(alpha: 0.15)
                   : null,
             );
           }).toList(),
@@ -362,7 +430,8 @@ class _RoundScreenState extends ConsumerState<RoundScreen> {
               child: BaraButton.primary(
                 label: 'التالي',
                 icon: Icons.arrow_back_rounded,
-                onPressed: () => ref.read(gameSessionProvider.notifier).advanceClueTurn(),
+                onPressed: () =>
+                    ref.read(gameSessionProvider.notifier).advanceClueTurn(),
               ),
             ),
             const SizedBox(width: 12),
@@ -370,7 +439,8 @@ class _RoundScreenState extends ConsumerState<RoundScreen> {
               child: BaraButton.secondary(
                 label: localizeUiPhrase(ref, 'ابدأ النقاش'),
                 icon: Icons.forum_rounded,
-                onPressed: () => ref.read(gameSessionProvider.notifier).startDiscussion(),
+                onPressed: () =>
+                    ref.read(gameSessionProvider.notifier).startDiscussion(),
               ),
             ),
           ],
@@ -393,7 +463,9 @@ class _RoundScreenState extends ConsumerState<RoundScreen> {
                 style: Theme.of(context).textTheme.headlineSmall,
               ),
               const SizedBox(height: 10),
-              Text(localizeUiPhrase(ref, 'ناقشوا بحرية: من يبدو خارج السالفة؟')),
+              Text(
+                localizeUiPhrase(ref, 'ناقشوا بحرية: من يبدو خارج السالفة؟'),
+              ),
               const SizedBox(height: 20),
               Container(
                 width: 180,
@@ -402,7 +474,9 @@ class _RoundScreenState extends ConsumerState<RoundScreen> {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.18),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.primary.withValues(alpha: 0.18),
                     width: 12,
                   ),
                 ),
@@ -425,7 +499,9 @@ class _RoundScreenState extends ConsumerState<RoundScreen> {
                       label: _timerStarted
                           ? localizeUiPhrase(ref, 'إيقاف')
                           : localizeUiPhrase(ref, 'ابدأ المؤقت'),
-                      icon: _timerStarted ? Icons.pause_rounded : Icons.timer_rounded,
+                      icon: _timerStarted
+                          ? Icons.pause_rounded
+                          : Icons.timer_rounded,
                       onPressed: () {
                         if (_timerStarted) {
                           _discussionTimer?.cancel();
@@ -462,7 +538,10 @@ class _RoundScreenState extends ConsumerState<RoundScreen> {
 
   Widget _buildVotingPhase(BuildContext context, GameSessionState session) {
     final voter = session.currentVoter;
-    final visiblePlayers = session.players.where((player) => player.id != voter?.id).toList();
+    final visiblePlayers = session.activePlayers
+        .where((player) => player.id != voter?.id)
+        .toList();
+    final requiredVotes = session.votesPerPlayer;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -477,12 +556,17 @@ class _RoundScreenState extends ConsumerState<RoundScreen> {
               ),
               const SizedBox(height: 10),
               Text(
-                localizeUiPhrase(ref, 'اختر المشتبهين بعدد برا السالفة. لا يمكنك التصويت لنفسك.'),
+                session.usesSequentialElimination
+                    ? 'اختر مشتبهًا واحدًا. سيتم إقصاء لاعب واحد فقط، ثم تبدأ جولة جديدة إذا استمرت المواجهة.'
+                    : localizeUiPhrase(
+                        ref,
+                        'اختر المشتبهين بعدد برا السالفة. لا يمكنك التصويت لنفسك.',
+                      ),
               ),
               const SizedBox(height: 12),
               Chip(
                 label: Text(
-                  '${localizeUiPhrase(ref, 'عدد الأصوات المتاحة')}: ${session.outsiderCount}',
+                  '${localizeUiPhrase(ref, 'عدد الأصوات المتاحة')}: $requiredVotes',
                 ),
               ),
             ],
@@ -502,18 +586,18 @@ class _RoundScreenState extends ConsumerState<RoundScreen> {
           itemBuilder: (context, index) {
             final player = visiblePlayers[index];
             final isSelected = _selectedSuspectIds.contains(player.id);
+            final selectionIndex = _selectedSuspectIds
+                .toList(growable: false)
+                .indexOf(player.id);
             return GlowCard(
               isSelected: isSelected,
-              onTap: () => setState(() {
-                if (isSelected) {
-                  _selectedSuspectIds.remove(player.id);
-                  return;
-                }
-                if (_selectedSuspectIds.length >= session.outsiderCount) {
-                  return;
-                }
-                _selectedSuspectIds.add(player.id);
-              }),
+              onTap: isSelected
+                  ? null
+                  : () => _confirmSuspectChoice(
+                      session: session,
+                      playerId: player.id,
+                      playerName: player.name,
+                    ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -522,42 +606,113 @@ class _RoundScreenState extends ConsumerState<RoundScreen> {
                     label: '${player.avatarIndex + 1}',
                   ),
                   const SizedBox(height: 10),
-                  Text(player.name, style: Theme.of(context).textTheme.titleMedium),
+                  Text(
+                    player.name,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                  if (isSelected) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      'الاختيار ${selectionIndex + 1}',
+                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.primary,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
                 ],
               ),
             );
           },
         ),
         const SizedBox(height: 20),
-        BaraButton.primary(
-          label: AppLocalizations.of(context).confirmVote,
-          icon: Icons.check_circle_rounded,
-          playSound: false,
-          onPressed: _selectedSuspectIds.length != session.outsiderCount
-              ? null
-              : () {
-                  AppAudio.instance.playVoteConfirm();
-                  ref.read(gameSessionProvider.notifier).submitVote(
-                        _selectedSuspectIds.toList(growable: false),
-                      );
-                  setState(_selectedSuspectIds.clear);
-                },
+        LinearProgressIndicator(
+          value: _selectedSuspectIds.length / requiredVotes,
+          minHeight: 8,
+          borderRadius: BorderRadius.circular(99),
+        ),
+        const SizedBox(height: 10),
+        Text(
+          'تم تأكيد ${_selectedSuspectIds.length} من $requiredVotes. '
+          'يُرسل التصويت تلقائيًا بعد آخر اختيار.',
+          textAlign: TextAlign.center,
+          style: Theme.of(context).textTheme.bodyMedium,
         ),
       ],
     );
   }
 
+  Future<void> _confirmSuspectChoice({
+    required GameSessionState session,
+    required String playerId,
+    required String playerName,
+  }) async {
+    if (_selectedSuspectIds.contains(playerId)) return;
+    final confirmed =
+        await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: Text(localizeUiPhrase(ref, 'تأكيد التصويت')),
+            content: Text(
+              '${localizeUiPhrase(ref, 'هل تؤكد التصويت لهذا اللاعب؟')}\n$playerName',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+                child: Text(AppLocalizations.of(dialogContext).cancel),
+              ),
+              FilledButton.icon(
+                onPressed: () => Navigator.of(dialogContext).pop(true),
+                icon: const Icon(Icons.how_to_vote_rounded),
+                label: Text(localizeUiPhrase(ref, 'تأكيد')),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+    if (!mounted || !confirmed) return;
+
+    final currentSession = ref.read(gameSessionProvider);
+    if (currentSession.phase != RoundPhase.voting ||
+        currentSession.currentVoter?.id != session.currentVoter?.id ||
+        _selectedSuspectIds.contains(playerId)) {
+      return;
+    }
+    final nextChoices = {..._selectedSuspectIds, playerId};
+    AppAudio.instance.playVoteConfirm();
+    HapticFeedback.selectionClick();
+    if (nextChoices.length == currentSession.votesPerPlayer) {
+      ref
+          .read(gameSessionProvider.notifier)
+          .submitVote(nextChoices.toList(growable: false));
+      setState(_selectedSuspectIds.clear);
+      return;
+    }
+    setState(() {
+      _selectedSuspectIds
+        ..clear()
+        ..addAll(nextChoices);
+    });
+  }
+
   Widget _buildSuspensePhase(BuildContext context, GameSessionState session) {
+    final outcome = session.outcome;
+    final revealedPlayers = session.usesSequentialElimination
+        ? session.players
+              .where(
+                (player) =>
+                    outcome?.latestAccusedPlayerIds.contains(player.id) ??
+                    false,
+              )
+              .toList(growable: false)
+        : session.outsiderPlayers;
     return GlowCard(
       child: TweenAnimationBuilder<double>(
         tween: Tween(begin: 0.94, end: 1),
         duration: const Duration(milliseconds: 900),
         curve: Curves.easeOutBack,
         builder: (context, value, child) {
-          return Transform.scale(
-            scale: value,
-            child: child,
-          );
+          return Transform.scale(scale: value, child: child);
         },
         child: Column(
           children: [
@@ -570,13 +725,61 @@ class _RoundScreenState extends ConsumerState<RoundScreen> {
             ),
             const SizedBox(height: 10),
             Text(
-              session.outsiderIds.length > 1
+              session.usesSequentialElimination
+                  ? outcome?.isTie == true
+                        ? 'تعادل التصويت، لن يتم إقصاء أي لاعب في هذه الجولة.'
+                        : 'يتم الآن كشف اللاعب الذي اختارته المجموعة فقط.'
+                  : session.outsiderIds.length > 1
                   ? localizeUiPhrase(
                       ref,
                       'يتم الآن كشف أصحاب برا السالفة وتجهيز التحدي الأخير لهم واحدًا تلو الآخر.',
                     )
-                  : localizeUiPhrase(ref, 'يتم الآن كشف برا السالفة وتجهيز التحدي الأخير.'),
+                  : localizeUiPhrase(
+                      ref,
+                      'يتم الآن كشف برا السالفة وتجهيز التحدي الأخير.',
+                    ),
               textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 18),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              alignment: WrapAlignment.center,
+              children: revealedPlayers
+                  .map(
+                    (player) => TweenAnimationBuilder<double>(
+                      tween: Tween(begin: 0.72, end: 1),
+                      duration: const Duration(milliseconds: 720),
+                      curve: Curves.easeOutBack,
+                      builder: (context, value, child) =>
+                          Transform.scale(scale: value, child: child),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          PlayerAvatar(
+                            index: player.avatarIndex,
+                            label: '${player.avatarIndex + 1}',
+                            radius: 28,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            player.name,
+                            style: Theme.of(context).textTheme.titleSmall,
+                          ),
+                          if (session.usesSequentialElimination) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              session.outsiderIds.contains(player.id)
+                                  ? 'كان برا السالفة'
+                                  : 'لم يكن برا السالفة',
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  )
+                  .toList(),
             ),
             const SizedBox(height: 18),
             const _SuspenseDots(),
@@ -586,14 +789,23 @@ class _RoundScreenState extends ConsumerState<RoundScreen> {
     );
   }
 
-  Widget _buildOutsiderGuessPhase(BuildContext context, GameSessionState session) {
+  Widget _buildOutsiderGuessPhase(
+    BuildContext context,
+    GameSessionState session,
+  ) {
     final outsider = session.currentOutsiderGuesser;
     final outcome = session.outcome;
     if (outsider == null || outcome == null) {
       return const SizedBox.shrink();
     }
     final totalOutsiderCount = outcome.outsiderIds.length;
-    final remaining = _outsiderRemainingSeconds ?? _outsiderGuessSeconds;
+    final duration = _guessDurationFor(session);
+    final remaining = _outsiderRemainingSeconds ?? duration ?? 0;
+    final guessOptions = outcome.guessOptionsFor(outsider.id);
+
+    if (session.currentOutsiderNeedsWagerTarget) {
+      return _buildWagerTargetPhase(context, session, outsider.id);
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -611,14 +823,13 @@ class _RoundScreenState extends ConsumerState<RoundScreen> {
               gradient: const LinearGradient(
                 begin: Alignment.topRight,
                 end: Alignment.bottomLeft,
-                colors: [
-                  Color(0xFF12392F),
-                  Color(0xFF0B1E1A),
-                ],
+                colors: [Color(0xFF12392F), Color(0xFF0B1E1A)],
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.22),
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.primary.withValues(alpha: 0.22),
                   blurRadius: 34,
                   offset: const Offset(0, 18),
                 ),
@@ -642,33 +853,88 @@ class _RoundScreenState extends ConsumerState<RoundScreen> {
                           children: [
                             Text(
                               '${AppLocalizations.of(context).youAreOutsider} ${session.outsiderGuessIndex + 1}/$totalOutsiderCount: ${outsider.name}',
-                              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                    color: Colors.white,
-                                  ),
+                              style: Theme.of(context).textTheme.headlineSmall
+                                  ?.copyWith(color: Colors.white),
                             ),
                             const SizedBox(height: 6),
                             Text(
                               localizeUiPhrase(
                                 ref,
-                                'اختر السالفة الصحيحة من بين 15 خيارًا قبل انتهاء الوقت.',
+                                'اختر السالفة الصحيحة قبل انتهاء الوقت.',
                               ),
-                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              style: Theme.of(context).textTheme.bodyMedium
+                                  ?.copyWith(
                                     color: Colors.white.withValues(alpha: 0.84),
                                   ),
                             ),
                           ],
                         ),
                       ),
-                      _GuessTimerBadge(seconds: remaining),
+                      if (duration == null)
+                        const Chip(
+                          avatar: Icon(Icons.all_inclusive_rounded, size: 18),
+                          label: Text('وقت غير محدود'),
+                        )
+                      else
+                        _GuessTimerBadge(seconds: remaining),
                     ],
                   ),
-                  const SizedBox(height: 18),
-                  LinearProgressIndicator(
-                    value: remaining / _outsiderGuessSeconds,
-                    minHeight: 8,
-                    borderRadius: BorderRadius.circular(99),
-                    backgroundColor: Colors.white.withValues(alpha: 0.14),
-                  ),
+                  if (duration != null) ...[
+                    const SizedBox(height: 18),
+                    LinearProgressIndicator(
+                      value: remaining / duration,
+                      minHeight: 8,
+                      borderRadius: BorderRadius.circular(99),
+                      backgroundColor: Colors.white.withValues(alpha: 0.14),
+                    ),
+                  ],
+                  if (session.powerCards[outsider.id] ==
+                      PowerCardCatalog.outsiderSecondChance) ...[
+                    const SizedBox(height: 14),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: session.outsiderGuessAttempts == 0
+                            ? const Color(0xFFF59E0B).withValues(alpha: 0.18)
+                            : const Color(0xFFEF4444).withValues(alpha: 0.22),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: session.outsiderGuessAttempts == 0
+                              ? const Color(0xFFF59E0B)
+                              : const Color(0xFFEF4444),
+                          width: 1.2,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            session.outsiderGuessAttempts == 0
+                                ? Icons.auto_awesome_rounded
+                                : Icons.warning_amber_rounded,
+                            color: session.outsiderGuessAttempts == 0
+                                ? const Color(0xFFF59E0B)
+                                : const Color(0xFFEF4444),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              session.outsiderGuessAttempts == 0
+                                  ? '🎯 مهارة الفرصة المزدوجة: لديك محاولتان للتخمين! (المحاولة 1/2)'
+                                  : '⚠️ المحاولة الأولى خاطئة! تبقت لك المحاولة الثانية، اختر السالفة الآن!',
+                              style: Theme.of(context).textTheme.bodyMedium
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -685,97 +951,214 @@ class _RoundScreenState extends ConsumerState<RoundScreen> {
                 localizeUiPhrase(ref, 'جدار الاختيارات'),
                 style: Theme.of(context).textTheme.titleLarge,
               ),
+              if (session.currentOutsiderCardId ==
+                      PowerCardCatalog.outsiderFourChoice &&
+                  !session.activatedOutsiderSkillIds.contains(outsider.id)) ...[
+                const SizedBox(height: 12),
+                BaraButton.secondary(
+                  label: 'فعّل زر الإنقاذ: 4 خيارات',
+                  icon: Icons.filter_4_rounded,
+                  onPressed: () {
+                    HapticFeedback.mediumImpact();
+                    ref
+                        .read(gameSessionProvider.notifier)
+                        .activateFourChoiceForCurrentOutsider();
+                  },
+                ),
+              ],
               const SizedBox(height: 8),
               Text(
-                localizeUiPhrase(ref, 'اختر بسرعة. إذا انتهى الوقت تُسجل إجابة خاطئة تلقائيًا.'),
+                localizeUiPhrase(
+                  ref,
+                  'اختر بسرعة. إذا انتهى الوقت تُسجل إجابة خاطئة تلقائيًا.',
+                ),
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
               const SizedBox(height: 14),
-              SizedBox(
-                height: 460,
-                child: GridView.builder(
-                  itemCount: outcome.outsiderGuessOptions.length,
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
-                    childAspectRatio: 1.9,
-                  ),
-                  itemBuilder: (context, index) {
-                    final topic = outcome.outsiderGuessOptions[index];
-                    final isSelected = _selectedTopicGuess == topic;
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: guessOptions.length,
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                  childAspectRatio: 1.9,
+                ),
+                itemBuilder: (context, index) {
+                  final topic = guessOptions[index];
+                  final isSelected = _selectedTopicGuess == topic;
 
-                    return AnimatedScale(
-                      scale: isSelected ? 1.02 : 1,
-                      duration: const Duration(milliseconds: 180),
-                      child: GlowCard(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                        isSelected: isSelected,
-                        onTap: () => setState(() => _selectedTopicGuess = topic),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Expanded(
-                              child: Text(
-                                _localizedGuessLabel(session.selectedPackId, topic),
-                                textAlign: TextAlign.center,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                      fontSize: 15,
-                                      height: 1.15,
-                                    ),
+                  return AnimatedScale(
+                    scale: isSelected ? 1.02 : 1,
+                    duration: const Duration(milliseconds: 180),
+                    child: GlowCard(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 12,
+                      ),
+                      isSelected: isSelected,
+                      onTap: () => _confirmTopicGuess(
+                        session: session,
+                        outsiderId: outsider.id,
+                        topic: topic,
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              _localizedGuessLabel(
+                                session.selectedPackId,
+                                topic,
+                              ),
+                              textAlign: TextAlign.center,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context).textTheme.titleMedium
+                                  ?.copyWith(fontSize: 15, height: 1.15),
+                            ),
+                          ),
+                          if (isSelected)
+                            Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: Icon(
+                                Icons.check_circle_rounded,
+                                color: Theme.of(context).colorScheme.primary,
                               ),
                             ),
-                            if (isSelected)
-                              Padding(
-                                padding: const EdgeInsets.only(right: 8),
-                                child: Icon(
-                                  Icons.check_circle_rounded,
-                                  color: Theme.of(context).colorScheme.primary,
-                                ),
-                              ),
-                          ],
-                        ),
+                        ],
                       ),
-                    );
-                  },
-                ),
+                    ),
+                  );
+                },
               ),
             ],
           ),
-        ),
-        const SizedBox(height: 10),
-        BaraButton.primary(
-          label: AppLocalizations.of(context).confirm,
-          icon: Icons.lightbulb_rounded,
-          playSound: false,
-          onPressed: _selectedTopicGuess == null
-              ? null
-              : () {
-                  final outsiderId = outsider.id;
-                  _outsiderGuessTimer?.cancel();
-                  ref.read(gameSessionProvider.notifier).submitOutsiderGuess(_selectedTopicGuess!);
-                  final updatedOutcome = ref.read(gameSessionProvider).outcome;
-                  if (updatedOutcome?.outsiderGuessResults[outsiderId] == true) {
-                    AppAudio.instance.playCorrectGuess();
-                  } else {
-                    AppAudio.instance.playWrongGuess();
-                  }
-                  setState(() => _selectedTopicGuess = null);
-                },
         ),
       ],
     );
   }
 
+  Widget _buildWagerTargetPhase(
+    BuildContext context,
+    GameSessionState session,
+    String outsiderId,
+  ) {
+    final candidates = session.players
+        .where((player) => player.id != outsiderId)
+        .toList(growable: false);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        GlowCard(
+          playSound: false,
+          padding: const EdgeInsets.all(22),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.casino_rounded,
+                    color: Theme.of(context).colorScheme.primary,
+                    size: 30,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'رهان الرصيد',
+                      style: Theme.of(context).textTheme.headlineSmall,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Text(
+                'اختر لاعباً قبل بدء الوقت. ستخمن بعدها من جميع سوالف الفئة.',
+                style: Theme.of(context).textTheme.bodyLarge,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'الصحيح: تكسب نصف رصيده ويُخصم منه. الخاطئ: تخسر الرهان ويحصل هو على +2.',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        for (final player in candidates) ...[
+          GlowCard(
+            onTap: () => _confirmWagerTarget(session, player.id),
+            child: Row(
+              children: [
+                PlayerAvatar(
+                  index: player.avatarIndex,
+                  label: '${player.avatarIndex + 1}',
+                  radius: 24,
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Text(
+                    player.name,
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ),
+                Text(
+                  '${player.score} نقطة',
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                const SizedBox(width: 8),
+                const Icon(Icons.chevron_left_rounded),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+        ],
+      ],
+    );
+  }
+
+  Future<void> _confirmWagerTarget(
+    GameSessionState session,
+    String playerId,
+  ) async {
+    final player = session.players.firstWhere((item) => item.id == playerId);
+    final stake = ((player.score.abs() + 1) ~/ 2).clamp(1, 1 << 30);
+    final confirmed =
+        await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: const Text('تأكيد رهان الرصيد'),
+            content: Text(
+              'هل تختار ${player.name}؟ قيمة الرهان $stake نقطة، وبعد التأكيد يبدأ وقت التخمين.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+                child: Text(AppLocalizations.of(dialogContext).cancel),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(dialogContext).pop(true),
+                child: const Text('تأكيد'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+    if (!mounted || !confirmed) return;
+    ref.read(gameSessionProvider.notifier).selectOutsiderWagerTarget(playerId);
+    setState(() {
+      _armedOutsiderGuessIndex = null;
+      _outsiderRemainingSeconds = _defaultOutsiderGuessSeconds;
+    });
+  }
+
   String _localizedTopic(String packId, String topic) {
     final locale = ref.read(appSettingsProvider).locale;
-    return ref.read(topicTranslationsProvider.notifier).localizedTopic(
-          packId: packId,
-          topic: topic,
-          locale: locale,
-        );
+    return ref
+        .read(topicTranslationsProvider.notifier)
+        .localizedTopic(packId: packId, topic: topic, locale: locale);
   }
 
   String _localizedGuessLabel(String packId, String guessedTopic) {
@@ -784,6 +1167,91 @@ class _RoundScreenState extends ConsumerState<RoundScreen> {
       return l10n.timeUp;
     }
     return _localizedTopic(packId, guessedTopic);
+  }
+
+  Future<void> _confirmTopicGuess({
+    required GameSessionState session,
+    required String outsiderId,
+    required String topic,
+  }) async {
+    setState(() => _selectedTopicGuess = topic);
+    final label = _localizedGuessLabel(session.selectedPackId, topic);
+    final confirmed =
+        await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) {
+            return AlertDialog(
+              title: const Text('تأكيد التخمين'),
+              content: Text('هل تريد اختيار "$label"؟'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(false),
+                  child: Text(AppLocalizations.of(dialogContext).cancel),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(true),
+                  child: const Text('تأكيد'),
+                ),
+              ],
+            );
+          },
+        ) ??
+        false;
+    if (!mounted) {
+      return;
+    }
+    if (!confirmed) {
+      setState(() => _selectedTopicGuess = null);
+      return;
+    }
+    _outsiderGuessTimer?.cancel();
+    ref.read(gameSessionProvider.notifier).submitOutsiderGuess(topic);
+    final updatedSession = ref.read(gameSessionProvider);
+    final updatedOutcome = updatedSession.outcome;
+    final attemptFinished =
+        updatedOutcome?.outsiderGuessResults.containsKey(outsiderId) ?? false;
+    if (!attemptFinished) {
+      _armedOutsiderGuessIndex = null;
+      _outsiderRemainingSeconds = _guessDurationFor(updatedSession);
+    }
+    if (updatedOutcome?.outsiderGuessResults[outsiderId] == true) {
+      AppAudio.instance.playCorrectGuess();
+    } else {
+      AppAudio.instance.playWrongGuess();
+    }
+    setState(() => _selectedTopicGuess = null);
+  }
+
+  String _knownOutsiderNames(GameSessionState session, String currentPlayerId) {
+    final names = session.players
+        .where(
+          (player) =>
+              session.outsiderIds.contains(player.id) &&
+              player.id != currentPlayerId,
+        )
+        .map((player) => player.name)
+        .toList(growable: false);
+    if (names.isEmpty) {
+      return 'أنت برا السالفة الوحيد';
+    }
+    return 'معك: ${names.join('، ')}';
+  }
+
+  String _powerCardLabel(String payload, GameSessionState session) {
+    final baseId = PowerCardCatalog.parseCardId(payload);
+    final targetId = PowerCardCatalog.parseTargetId(payload);
+    final card = PowerCardCatalog.byId(baseId);
+    if (baseId == PowerCardCatalog.tacticalDrain && targetId != null) {
+      final victim = session.players.firstWhereOrNull((p) => p.id == targetId);
+      final victimName = victim?.name ?? 'لاعب مستهدف';
+      return '⚡ ${card.label}\n${card.description}\nالهدف: $victimName';
+    }
+    if (baseId == PowerCardCatalog.tacticalAlliance && targetId != null) {
+      final ally = session.players.firstWhereOrNull((p) => p.id == targetId);
+      final allyName = ally?.name ?? 'حليفك المختار';
+      return '🤝 ${card.label}\n${card.description}\nالحليف: $allyName';
+    }
+    return '${card.label}\n${card.description}';
   }
 
   void _warmRoundTranslations(
@@ -798,6 +1266,9 @@ class _RoundScreenState extends ConsumerState<RoundScreen> {
       if (session.currentTopic != null) session.currentTopic!,
       ...session.assignments.map((assignment) => assignment.topic),
       ...?session.outcome?.outsiderGuessOptions,
+      ...?session.outcome?.outsiderGuessOptionsByPlayer.values.expand(
+        (options) => options,
+      ),
       ...?session.outcome?.outsiderGuesses.values,
     }..remove('انتهى الوقت');
 
@@ -806,7 +1277,9 @@ class _RoundScreenState extends ConsumerState<RoundScreen> {
     }
 
     Future<void>.microtask(
-      () => ref.read(topicTranslationsProvider.notifier).ensureTopicsTranslated(
+      () => ref
+          .read(topicTranslationsProvider.notifier)
+          .ensureTopicsTranslated(
             packId: session.selectedPackId,
             topics: topics,
           ),
@@ -855,12 +1328,16 @@ class _RoundScreenState extends ConsumerState<RoundScreen> {
   void _armOutsiderGuessTimer() {
     final session = ref.read(gameSessionProvider);
     final outsider = session.currentOutsiderGuesser;
-    if (_armedOutsiderGuessIndex == session.outsiderGuessIndex || outsider == null) {
+    final duration = _guessDurationFor(session);
+    if (_armedOutsiderGuessIndex == session.outsiderGuessIndex ||
+        outsider == null ||
+        duration == null ||
+        session.currentOutsiderNeedsWagerTarget) {
       return;
     }
 
     _armedOutsiderGuessIndex = session.outsiderGuessIndex;
-    _outsiderRemainingSeconds = _outsiderGuessSeconds;
+    _outsiderRemainingSeconds = duration;
     _outsiderGuessTimer?.cancel();
     _outsiderGuessTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!mounted) {
@@ -868,18 +1345,32 @@ class _RoundScreenState extends ConsumerState<RoundScreen> {
         return;
       }
 
-      final remaining = _outsiderRemainingSeconds ?? _outsiderGuessSeconds;
+      final remaining = _outsiderRemainingSeconds ?? duration;
       if (remaining <= 1) {
         timer.cancel();
         _outsiderGuessTimer = null;
-        final expiredOutsider = ref.read(gameSessionProvider).currentOutsiderGuesser;
-        ref.read(gameSessionProvider.notifier).submitOutsiderGuess('انتهى الوقت');
+        final expiredOutsider = ref
+            .read(gameSessionProvider)
+            .currentOutsiderGuesser;
+        ref
+            .read(gameSessionProvider.notifier)
+            .submitOutsiderGuess('انتهى الوقت');
+        final updatedSession = ref.read(gameSessionProvider);
+        final attemptFinished =
+            expiredOutsider == null ||
+            (updatedSession.outcome?.outsiderGuessResults.containsKey(
+                  expiredOutsider.id,
+                ) ??
+                false);
         AppAudio.instance.playWrongGuess();
         setState(() {
-          _outsiderRemainingSeconds = 0;
+          _outsiderRemainingSeconds = attemptFinished ? 0 : duration;
           _selectedTopicGuess = null;
+          if (!attemptFinished) {
+            _armedOutsiderGuessIndex = null;
+          }
         });
-        if (expiredOutsider == null) {
+        if (attemptFinished) {
           _armedOutsiderGuessIndex = null;
         }
         return;
@@ -889,6 +1380,49 @@ class _RoundScreenState extends ConsumerState<RoundScreen> {
         _outsiderRemainingSeconds = remaining - 1;
       });
     });
+  }
+
+  int? _guessDurationFor(GameSessionState session) {
+    return switch (session.currentOutsiderCardId) {
+      PowerCardCatalog.outsiderUnlimitedTime => null,
+      PowerCardCatalog.outsiderPanicTimer => 10,
+      _ => _defaultOutsiderGuessSeconds,
+    };
+  }
+}
+
+class _RevealInfoPill extends StatelessWidget {
+  const _RevealInfoPill({required this.icon, required this.text});
+
+  final IconData icon;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: Colors.white, size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              text,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 
@@ -913,7 +1447,10 @@ class _PhaseHeader extends StatelessWidget {
     return GlowCard(
       child: Row(
         children: [
-          Icon(Icons.bolt_rounded, color: Theme.of(context).colorScheme.primary),
+          Icon(
+            Icons.bolt_rounded,
+            color: Theme.of(context).colorScheme.primary,
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
@@ -934,7 +1471,8 @@ class _SuspenseDots extends StatefulWidget {
   State<_SuspenseDots> createState() => _SuspenseDotsState();
 }
 
-class _SuspenseDotsState extends State<_SuspenseDots> with SingleTickerProviderStateMixin {
+class _SuspenseDotsState extends State<_SuspenseDots>
+    with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
 
   @override
@@ -966,10 +1504,9 @@ class _SuspenseDotsState extends State<_SuspenseDots> with SingleTickerProviderS
               height: 12,
               margin: const EdgeInsets.symmetric(horizontal: 6),
               decoration: BoxDecoration(
-                color: Theme.of(context)
-                    .colorScheme
-                    .primary
-                    .withValues(alpha: 0.35 + (offset * 0.65)),
+                color: Theme.of(
+                  context,
+                ).colorScheme.primary.withValues(alpha: 0.35 + (offset * 0.65)),
                 shape: BoxShape.circle,
               ),
             );
@@ -1007,15 +1544,15 @@ class _GuessTimerBadge extends StatelessWidget {
           Text(
             '$seconds',
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
-                ),
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+            ),
           ),
           Text(
             'ث',
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: Colors.white.withValues(alpha: 0.84),
-                ),
+              color: Colors.white.withValues(alpha: 0.84),
+            ),
           ),
         ],
       ),

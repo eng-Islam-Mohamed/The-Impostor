@@ -1,0 +1,329 @@
+CR - Project Technologies and Code Explanation
+
+1. Project overview
+
+This project is a party game called "The Impostor" / "Bara Alsalfa". It is built as:
+- a Flutter mobile application inside `app/`
+- a real-time multiplayer backend inside `server/`
+
+The app supports local play and online multiplayer rooms.
+
+2. Main technologies used in the game
+
+Frontend / mobile app:
+- Flutter: used to build the user interface and game screens
+- Dart: main programming language of the app
+- Material Design widgets: used for UI structure and components
+- Flutter Riverpod: used for state management
+- GoRouter: used for screen navigation and routing
+- Intl + Flutter localization: used for multilingual UI
+- translator package: used for topic translation between languages
+- socket_io_client: used for connecting the app to the live multiplayer server
+- url_launcher: used for opening links/share links when needed
+
+Backend / online server:
+- Node.js: JavaScript runtime used to run the backend
+- TypeScript: main language of the backend
+- Express: used to create the HTTP server and health endpoint
+- Socket.IO: used for real-time multiplayer communication
+- CORS: used to allow app-server communication from different origins
+- tsx: used for TypeScript development mode
+
+Platform / build tools:
+- Android support through Flutter
+- Kotlin: used in the Android launcher (`MainActivity.kt`)
+- Gradle Kotlin DSL: used in Android build files
+- YAML / JSON / ARB files: used for configuration, localization, and deployment
+- Render + Docker: used to deploy the multiplayer server publicly
+
+3. Languages used in the project
+
+Programming languages:
+- Dart
+- TypeScript
+- JavaScript runtime environment through Node.js
+- Kotlin
+- YAML
+- JSON
+
+User interface languages supported by the game:
+- Arabic
+- English
+- Chinese
+- Hindi
+- Spanish
+- French
+- Bengali
+- Portuguese
+- Russian
+- Indonesian
+
+Localization files are stored in `app/lib/l10n/` as `.arb` files.
+
+4. App architecture and code structure
+
+The Flutter app is separated into clear layers:
+
+- `app/lib/app/`
+  Contains app startup, theme, and router.
+
+- `app/lib/features/`
+  Contains game screens and feature logic such as home, setup, multiplayer, round, results, profile, onboarding, store, and stats.
+
+- `app/lib/domain/`
+  Contains core business models and rules such as:
+  - game modes
+  - room state
+  - player profiles
+  - round outcomes
+  - game engine logic
+
+- `app/lib/data/`
+  Contains repositories and local storage code.
+  This is where the app loads settings, categories, multiplayer config, and chooses between fake or live multiplayer repositories.
+
+- `app/lib/core/`
+  Contains shared reusable logic such as:
+  - widgets
+  - audio
+  - i18n services
+
+This structure makes the app easier to maintain because UI, business logic, and data access are separated.
+
+5. How the main game code works
+
+App startup:
+- `app/lib/main.dart` initializes settings, audio, saved categories, translations, and multiplayer config.
+- After loading them, it starts the app inside a Riverpod `ProviderScope`.
+
+App shell:
+- `app/lib/app/app.dart` creates `MaterialApp.router`
+- it applies theme, locale, text direction, and localization delegates
+
+Navigation:
+- `app/lib/app/router/app_router.dart` defines routes for all screens
+- examples: splash, onboarding, home, setup, multiplayer hub, create room, join room, lobby, game room, round, results, profile
+
+Core local game logic:
+- `app/lib/domain/services/game_engine.dart` contains the main local game rules
+- it creates rounds
+- chooses the secret topic
+- randomly selects outsider players
+- resolves votes
+- calculates scores
+- handles outsider final guesses
+
+Seed data:
+- `app/lib/data/local/seed_data.dart` provides starter players and starter category packs
+- the default packs currently include countries and historical people
+
+Game modes:
+- `app/lib/domain/models/game_mode.dart` defines modes such as:
+  - classic
+  - quick
+  - teams
+  - family
+  - chaos
+- each mode has its own min/max player counts and presentation text
+
+6. How the online mode was developed
+
+The online mode is built with Flutter on the client side and Socket.IO on the server side.
+
+Client side:
+- `app/lib/data/repositories/socket_multiplayer_room_repository.dart`
+- `app/lib/features/multiplayer/application/multiplayer_room_controller.dart`
+- `app/lib/data/repositories/multiplayer_room_repository_provider.dart`
+- `app/lib/features/multiplayer/application/multiplayer_config_controller.dart`
+
+Server side:
+- `server/src/server.ts`
+
+The online mode works like this:
+
+1. The app stores a multiplayer client configuration.
+   - It keeps:
+     - whether to use the live server
+     - the server URL
+     - a generated client ID
+
+2. The repository provider chooses the implementation.
+   - If `useLiveServer` is true, the app uses `SocketMultiplayerRoomRepository`
+   - Otherwise it uses `FakeMultiplayerRoomRepository` for offline/demo behavior
+
+3. The socket repository opens a WebSocket connection.
+   - It connects to the backend using `socket_io_client`
+   - Reconnection is enabled
+   - Transport is set to `websocket`
+
+4. The app sends room actions to the server.
+   Main events include:
+   - `room.create.requested`
+   - `room.join.requested`
+   - `room.ready.updated`
+   - `game.start.requested`
+   - `game.phase.advance.requested`
+   - `game.vote.submitted`
+   - `game.outsider_guess.submitted`
+   - `room.player.ban.requested`
+   - `room.chat.sent`
+   - `room.leave.requested`
+
+5. The server validates every action.
+   The backend checks:
+   - room existence
+   - player existence
+   - host permissions
+   - socket ownership
+   - vote validity
+   - outsider guess validity
+
+6. The server sends synchronized room snapshots back to every player.
+   - It emits `room.snapshot`
+   - each player receives a personalized view
+   - insiders can see the topic
+   - outsiders cannot see the topic
+   - only the active outsider can see guess options during the guess phase
+
+7. The app listens to those room snapshots and updates the UI in real time.
+   - the `MultiplayerRoomController` subscribes to the room stream
+   - whenever the server sends a new snapshot, the app updates the current room state
+
+7. Online mode features implemented
+
+The online backend currently supports:
+- room creation
+- joining by room code
+- room share link generation
+- ready/unready status
+- host-only game start
+- live phase progression
+- voting
+- outsider guess phase
+- score synchronization
+- chat messages
+- banning players
+- host migration if the host disconnects
+- disconnect handling
+- timed outsider guess expiration
+- health check endpoint `/health`
+
+8. Why Socket.IO was used for online mode
+
+Socket.IO is a good fit here because the game needs live synchronization between many phones at the same time. A party game room changes quickly, and every player must receive updates immediately. Socket.IO helps with:
+- real-time events
+- connection/reconnection handling
+- acknowledgements for requests
+- easier room state broadcasting
+
+This is much better for a live multiplayer game than repeatedly calling normal HTTP APIs for every action.
+
+9. Backend code explanation
+
+The server keeps rooms in memory using a `Map<string, ServerRoom>`.
+
+Important backend responsibilities:
+- create and store rooms
+- generate room IDs and 6-character room codes
+- keep player list and host player
+- assign outsider roles and topics
+- manage phases:
+  - lobby
+  - privateReveal
+  - clueTurns
+  - discussion
+  - voting
+  - voteReveal
+  - outsiderGuess
+  - results
+- calculate votes and score changes
+- send different private data to each player
+- track chat and system messages
+- remove empty rooms
+
+The function `buildRoomView(...)` is especially important because it creates a safe room snapshot for each specific player. This prevents secret information from being sent to the wrong player.
+
+10. Local/offline support
+
+The app also includes `FakeMultiplayerRoomRepository`.
+
+Purpose:
+- allows testing multiplayer screens without a real backend
+- helps during development
+- gives a fallback/demo room flow
+
+This means the project was designed with both:
+- real online play
+- local simulation/testing
+
+11. Data persistence used in the app
+
+The project stores some app data locally using JSON files through Dart `File` APIs.
+
+Examples:
+- app settings
+- subjects/category packs
+- multiplayer configuration
+- topic translation cache
+
+This local persistence is handled by files inside `app/lib/data/local/`.
+
+12. Translation and multilingual support
+
+There are two multilingual systems in the project:
+
+A. UI localization
+- based on ARB localization files
+- generated Flutter localization classes are used in the app
+- controls app text, labels, titles, and interface language
+
+B. Topic translation
+- handled by `topic_translation_service.dart`
+- uses the `translator` package
+- translates game topics into supported languages
+- helps multilingual players understand the topic set
+
+13. Audio and UI technologies
+
+The app also includes:
+- custom theme files in `app/lib/app/theme/`
+- reusable widgets in `app/lib/core/widgets/`
+- audio assets in `app/assets/audio/`
+- custom IBM Plex Sans Arabic fonts in `app/assets/fonts/`
+
+This means the game is not only functional, but also designed with a custom visual identity and Arabic-first presentation.
+
+14. Deployment technologies
+
+For online multiplayer deployment, the project includes:
+- `render.yaml`
+- `server/Dockerfile`
+- Node.js server build scripts
+
+This allows the backend to be deployed to Render or another cloud host.
+
+The app can use:
+- a local LAN server URL for testing
+- or a public hosted URL for real internet multiplayer
+
+The hosted URL can also be injected at build time with:
+- `--dart-define=MULTIPLAYER_SERVER_URL=...`
+
+15. Final summary
+
+This game is mainly built with Flutter and Dart for the mobile app, and Node.js + TypeScript + Express + Socket.IO for the online backend.
+
+The codebase follows a layered architecture:
+- presentation
+- domain
+- data
+- core/shared utilities
+
+The most important technology for online mode is Socket.IO because it keeps all players synchronized in real time. Riverpod manages app state on the client, while the TypeScript server controls rooms, roles, phases, voting, chat, and scoring.
+
+Overall, this is a multilingual Arabic-first mobile party game with:
+- local gameplay logic
+- real-time online rooms
+- multiplayer chat and voting
+- dynamic topic translation
+- configurable server deployment

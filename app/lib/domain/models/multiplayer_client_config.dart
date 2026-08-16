@@ -9,12 +9,12 @@ class MultiplayerClientConfig {
   });
 
   const MultiplayerClientConfig.defaults()
-      : useLiveServer = true,
-        serverUrl = const String.fromEnvironment(
-          'MULTIPLAYER_SERVER_URL',
-          defaultValue: 'http://192.168.1.40:8080',
-        ),
-        clientId = 'client-default';
+    : useLiveServer = true,
+      serverUrl = const String.fromEnvironment(
+        'MULTIPLAYER_SERVER_URL',
+        defaultValue: 'http://192.168.1.40:8080',
+      ),
+      clientId = 'client-default';
 
   final bool useLiveServer;
   final String serverUrl;
