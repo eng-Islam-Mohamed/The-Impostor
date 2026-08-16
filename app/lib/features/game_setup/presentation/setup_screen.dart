@@ -13,11 +13,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 class SetupScreen extends ConsumerStatefulWidget {
-  const SetupScreen({super.key, this.initialModeSlug});
+  const SetupScreen({
+    super.key,
+    this.initialModeSlug,
+    this.editExisting = false,
+  });
 
   static const routePath = '/setup';
 
   final String? initialModeSlug;
+  final bool editExisting;
 
   @override
   ConsumerState<SetupScreen> createState() => _SetupScreenState();
@@ -33,6 +38,9 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
       return;
     }
     _didApplyInitialMode = true;
+    if (widget.editExisting) {
+      return;
+    }
     ref
         .read(gameSessionProvider.notifier)
         .beginNewSession(GameMode.fromSlug(widget.initialModeSlug));
@@ -55,7 +63,10 @@ class _SetupScreenState extends ConsumerState<SetupScreen> {
     ]);
 
     return BaraScaffold(
-      title: localizeUiPhrase(ref, 'إنشاء لعبة'),
+      title: localizeUiPhrase(
+        ref,
+        widget.editExisting ? 'تعديل إعدادات الجلسة' : 'إنشاء لعبة',
+      ),
       showBackButton: true,
       child: ListView(
         padding: const EdgeInsets.fromLTRB(24, 18, 24, 32),

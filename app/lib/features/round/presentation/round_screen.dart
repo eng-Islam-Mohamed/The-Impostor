@@ -44,6 +44,9 @@ class _RoundScreenState extends ConsumerState<RoundScreen> {
   bool _timerStarted = false;
   bool _suspenseScheduled = false;
   int? _armedOutsiderGuessIndex;
+  final GlobalKey _revealCardKey = GlobalKey();
+  bool _secretGestureReachedTopRight = false;
+  bool _showSecretPrankIntel = false;
 
   @override
   void dispose() {
@@ -224,17 +227,30 @@ class _RoundScreenState extends ConsumerState<RoundScreen> {
             setState(() {
               _revealed = true;
               _hasRevealedCurrent = true;
+              _secretGestureReachedTopRight = false;
+              _showSecretPrankIntel = false;
             });
           },
+          onLongPressMoveUpdate: (details) =>
+              _trackSecretRevealGesture(details, session, assignment.playerId),
           onLongPressEnd: (_) {
             if (!mounted) return;
-            setState(() => _revealed = false);
+            setState(() {
+              _revealed = false;
+              _secretGestureReachedTopRight = false;
+              _showSecretPrankIntel = false;
+            });
           },
           onLongPressCancel: () {
             if (!mounted) return;
-            setState(() => _revealed = false);
+            setState(() {
+              _revealed = false;
+              _secretGestureReachedTopRight = false;
+              _showSecretPrankIntel = false;
+            });
           },
           child: AnimatedContainer(
+            key: _revealCardKey,
             duration: const Duration(milliseconds: 220),
             curve: Curves.easeOutCubic,
             padding: const EdgeInsets.all(28),
@@ -312,6 +328,15 @@ class _RoundScreenState extends ConsumerState<RoundScreen> {
                     ),
                   ),
                 ],
+                if (_revealed && _showSecretPrankIntel) ...[
+                  const SizedBox(height: 14),
+                  _RevealInfoPill(
+                    icon: Icons.visibility_off_rounded,
+                    text:
+                        '${localizeUiPhrase(ref, 'السالفة:')} ${_localizedTopic(session.selectedPackId, assignment.topic)}\n'
+                        '${localizeUiPhrase(ref, 'برا السالفة:')} ${_secretOutsiderNames(session)}',
+                  ),
+                ],
                 const SizedBox(height: 16),
                 Text(
                   _revealed
@@ -348,6 +373,8 @@ class _RoundScreenState extends ConsumerState<RoundScreen> {
                   setState(() {
                     _revealed = false;
                     _hasRevealedCurrent = false;
+                    _secretGestureReachedTopRight = false;
+                    _showSecretPrankIntel = false;
                   });
                   ref.read(gameSessionProvider.notifier).advanceReveal();
                 }
@@ -355,6 +382,38 @@ class _RoundScreenState extends ConsumerState<RoundScreen> {
         ),
       ],
     );
+  }
+
+  void _trackSecretRevealGesture(
+    LongPressMoveUpdateDetails details,
+    GameSessionState session,
+    String playerId,
+  ) {
+    if (!session.secretPrankConfig.isInsider(playerId)) return;
+    final renderObject = _revealCardKey.currentContext?.findRenderObject();
+    if (renderObject is! RenderBox || !renderObject.hasSize) return;
+    final position = details.localPosition;
+    final size = renderObject.size;
+    if (!_secretGestureReachedTopRight &&
+        position.dx >= size.width * 0.68 &&
+        position.dy <= size.height * 0.35) {
+      _secretGestureReachedTopRight = true;
+      return;
+    }
+    if (_secretGestureReachedTopRight &&
+        !_showSecretPrankIntel &&
+        position.dx <= size.width * 0.32 &&
+        position.dy >= size.height * 0.65) {
+      HapticFeedback.lightImpact();
+      setState(() => _showSecretPrankIntel = true);
+    }
+  }
+
+  String _secretOutsiderNames(GameSessionState session) {
+    return session.players
+        .where((player) => session.outsiderIds.contains(player.id))
+        .map((player) => player.name)
+        .join('، ');
   }
 
   Widget _buildCluePhase(BuildContext context, GameSessionState session) {

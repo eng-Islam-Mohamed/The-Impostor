@@ -1,5 +1,6 @@
 import 'package:bara_alsalfa/domain/models/game_mode.dart';
 import 'package:bara_alsalfa/domain/models/player_profile.dart';
+import 'package:bara_alsalfa/domain/models/secret_prank_config.dart';
 import 'package:flutter/foundation.dart';
 
 enum PowerDensity {
@@ -34,6 +35,7 @@ class PersistedGameSession {
     required this.roundNumber,
     this.powerDensity = PowerDensity.balanced,
     this.sequentialEliminationEnabled = false,
+    this.secretPrankConfig = const SecretPrankConfig(),
   });
 
   final List<PlayerProfile> players;
@@ -48,6 +50,7 @@ class PersistedGameSession {
   final int roundNumber;
   final PowerDensity powerDensity;
   final bool sequentialEliminationEnabled;
+  final SecretPrankConfig secretPrankConfig;
 
   Map<String, dynamic> toJson() {
     return {
@@ -63,6 +66,7 @@ class PersistedGameSession {
       'roundNumber': roundNumber,
       'powerDensity': powerDensity.name,
       'sequentialEliminationEnabled': sequentialEliminationEnabled,
+      'secretPrankConfig': secretPrankConfig.toJson(),
     };
   }
 
@@ -95,6 +99,9 @@ class PersistedGameSession {
       powerDensity: PowerDensity.fromName(json['powerDensity'] as String?),
       sequentialEliminationEnabled:
           json['sequentialEliminationEnabled'] as bool? ?? false,
+      secretPrankConfig: SecretPrankConfig.fromJson(
+        json['secretPrankConfig'] as Map<String, dynamic>?,
+      ).sanitizedForPlayers(players.map((player) => player.id).toSet()),
     );
   }
 }

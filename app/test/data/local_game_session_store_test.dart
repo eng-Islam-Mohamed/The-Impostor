@@ -4,6 +4,7 @@ import 'package:bara_alsalfa/data/local/local_game_session_store.dart';
 import 'package:bara_alsalfa/domain/models/game_mode.dart';
 import 'package:bara_alsalfa/domain/models/persisted_game_session.dart';
 import 'package:bara_alsalfa/domain/models/player_profile.dart';
+import 'package:bara_alsalfa/domain/models/secret_prank_config.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -70,5 +71,11 @@ PersistedGameSession _snapshot() {
     outsiderCount: 1,
     roundNumber: 6,
     sequentialEliminationEnabled: true,
+    secretPrankConfig: SecretPrankConfig(
+      enabled: true,
+      pin: '2468',
+      insiderPlayerIds: {'player-1', 'player-3'},
+      roundsRemaining: 3,
+    ),
   );
 }

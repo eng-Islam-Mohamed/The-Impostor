@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:bara_alsalfa/core/i18n/game_text.dart';
 import 'package:bara_alsalfa/core/i18n/ui_phrase_localizer.dart';
 import 'package:bara_alsalfa/core/widgets/bara_button.dart';
@@ -11,13 +13,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-class PlayersScreen extends ConsumerWidget {
+class PlayersScreen extends ConsumerStatefulWidget {
   const PlayersScreen({super.key});
 
   static const routePath = '/setup/players';
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<PlayersScreen> createState() => _PlayersScreenState();
+}
+
+class _PlayersScreenState extends ConsumerState<PlayersScreen> {
+  @override
+  Widget build(BuildContext context) {
     final session = ref.watch(gameSessionProvider);
     final mode = session.selectedMode;
     final l10n = AppLocalizations.of(context);
@@ -42,10 +49,31 @@ class PlayersScreen extends ConsumerWidget {
       'التالي: اختيار الفئة',
       'تعديل الاسم',
       'اكتب اسم اللاعب',
+      'رمز الإدارة',
+      'أدخل الرمز الرباعي',
+      'دخول',
+      'الرمز غير صحيح',
+      'إدارة أصحاب السر',
+      'اختر اللاعبين الذين يمكنهم رؤية السالفة وأسماء برا السالفة بالحركة المخفية.',
+      'الرصيد:',
+      'مدة تشغيل المقلب',
+      'حتى أوقفه يدوياً',
+      'جولة واحدة',
+      'جولتان',
+      '3 جولات',
+      '5 جولات',
+      '10 جولات',
+      'رمز جديد اختياري',
+      'اتركه فارغاً للاحتفاظ بالرمز الحالي',
+      'حفظ وتشغيل المقلب',
+      'إيقاف المقلب ومسح أصحاب السر',
     ]);
 
     return BaraScaffold(
-      title: l10n.players,
+      titleWidget: _SecretPlayersTitle(
+        title: l10n.players,
+        onUnlocked: _openSecretPrankPanel,
+      ),
       showBackButton: true,
       child: ListView(
         padding: const EdgeInsets.fromLTRB(24, 18, 24, 32),
@@ -215,6 +243,204 @@ class PlayersScreen extends ConsumerWidget {
     );
   }
 
+  Future<void> _openSecretPrankPanel() async {
+    final pinController = TextEditingController();
+    final authenticated =
+        await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: Text(localizeUiPhrase(ref, 'رمز الإدارة')),
+            content: TextField(
+              controller: pinController,
+              autofocus: true,
+              obscureText: true,
+              keyboardType: TextInputType.number,
+              maxLength: 4,
+              decoration: InputDecoration(
+                hintText: localizeUiPhrase(ref, 'أدخل الرمز الرباعي'),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+                child: Text(AppLocalizations.of(context).cancel),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(dialogContext).pop(
+                  ref
+                      .read(gameSessionProvider.notifier)
+                      .verifySecretPrankPin(pinController.text),
+                ),
+                child: Text(localizeUiPhrase(ref, 'دخول')),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+    pinController.dispose();
+    if (!mounted) return;
+    if (!authenticated) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(localizeUiPhrase(ref, 'الرمز غير صحيح'))),
+      );
+      return;
+    }
+    await _showSecretPrankSettings();
+  }
+
+  Future<void> _showSecretPrankSettings() async {
+    final session = ref.read(gameSessionProvider);
+    final selectedIds = {...session.secretPrankConfig.insiderPlayerIds};
+    var roundChoice = session.secretPrankConfig.roundsRemaining ?? 0;
+    final newPinController = TextEditingController();
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (sheetContext) => StatefulBuilder(
+        builder: (context, setSheetState) => SafeArea(
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(
+              22,
+              4,
+              22,
+              22 + MediaQuery.viewInsetsOf(context).bottom,
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    localizeUiPhrase(ref, 'إدارة أصحاب السر'),
+                    style: Theme.of(context).textTheme.headlineSmall,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    localizeUiPhrase(
+                      ref,
+                      'اختر اللاعبين الذين يمكنهم رؤية السالفة وأسماء برا السالفة بالحركة المخفية.',
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  for (final player in session.players)
+                    CheckboxListTile(
+                      value: selectedIds.contains(player.id),
+                      contentPadding: EdgeInsets.zero,
+                      secondary: PlayerAvatar(
+                        index: player.avatarIndex,
+                        label: '${player.avatarIndex + 1}',
+                        radius: 22,
+                      ),
+                      title: Text(player.name),
+                      subtitle: Text(
+                        '${localizeUiPhrase(ref, 'الرصيد:')} ${player.score}',
+                      ),
+                      onChanged: (selected) => setSheetState(() {
+                        if (selected ?? false) {
+                          selectedIds.add(player.id);
+                        } else {
+                          selectedIds.remove(player.id);
+                        }
+                      }),
+                    ),
+                  const Divider(height: 28),
+                  DropdownButtonFormField<int>(
+                    initialValue: roundChoice,
+                    decoration: InputDecoration(
+                      labelText: localizeUiPhrase(ref, 'مدة تشغيل المقلب'),
+                    ),
+                    items: [
+                      DropdownMenuItem<int>(
+                        value: 0,
+                        child: Text(localizeUiPhrase(ref, 'حتى أوقفه يدوياً')),
+                      ),
+                      DropdownMenuItem<int>(
+                        value: 1,
+                        child: Text(localizeUiPhrase(ref, 'جولة واحدة')),
+                      ),
+                      DropdownMenuItem<int>(
+                        value: 2,
+                        child: Text(localizeUiPhrase(ref, 'جولتان')),
+                      ),
+                      DropdownMenuItem<int>(
+                        value: 3,
+                        child: Text(localizeUiPhrase(ref, '3 جولات')),
+                      ),
+                      DropdownMenuItem<int>(
+                        value: 5,
+                        child: Text(localizeUiPhrase(ref, '5 جولات')),
+                      ),
+                      DropdownMenuItem<int>(
+                        value: 10,
+                        child: Text(localizeUiPhrase(ref, '10 جولات')),
+                      ),
+                    ],
+                    onChanged: (value) =>
+                        setSheetState(() => roundChoice = value ?? 0),
+                  ),
+                  const SizedBox(height: 14),
+                  TextField(
+                    controller: newPinController,
+                    obscureText: true,
+                    keyboardType: TextInputType.number,
+                    maxLength: 4,
+                    decoration: InputDecoration(
+                      labelText: localizeUiPhrase(ref, 'رمز جديد اختياري'),
+                      hintText: localizeUiPhrase(
+                        ref,
+                        'اتركه فارغاً للاحتفاظ بالرمز الحالي',
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  BaraButton.primary(
+                    label: localizeUiPhrase(ref, 'حفظ وتشغيل المقلب'),
+                    icon: Icons.visibility_off_rounded,
+                    onPressed: selectedIds.isEmpty
+                        ? null
+                        : () {
+                            ref
+                                .read(gameSessionProvider.notifier)
+                                .configureSecretPrank(
+                                  insiderPlayerIds: selectedIds,
+                                  roundsRemaining: roundChoice == 0
+                                      ? null
+                                      : roundChoice,
+                                  newPin: newPinController.text,
+                                );
+                            Navigator.of(sheetContext).pop();
+                          },
+                  ),
+                  if (session.secretPrankConfig.enabled ||
+                      session
+                          .secretPrankConfig
+                          .insiderPlayerIds
+                          .isNotEmpty) ...[
+                    const SizedBox(height: 10),
+                    BaraButton.secondary(
+                      label: localizeUiPhrase(
+                        ref,
+                        'إيقاف المقلب ومسح أصحاب السر',
+                      ),
+                      icon: Icons.delete_forever_rounded,
+                      onPressed: () {
+                        ref
+                            .read(gameSessionProvider.notifier)
+                            .disableSecretPrank();
+                        Navigator.of(sheetContext).pop();
+                      },
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    newPinController.dispose();
+  }
+
   Future<void> _showRenameDialog(
     BuildContext context,
     WidgetRef ref,
@@ -253,6 +479,78 @@ class PlayersScreen extends ConsumerWidget {
           ],
         );
       },
+    );
+  }
+}
+
+class _SecretPlayersTitle extends StatefulWidget {
+  const _SecretPlayersTitle({required this.title, required this.onUnlocked});
+
+  final String title;
+  final VoidCallback onUnlocked;
+
+  @override
+  State<_SecretPlayersTitle> createState() => _SecretPlayersTitleState();
+}
+
+class _SecretPlayersTitleState extends State<_SecretPlayersTitle> {
+  Timer? _holdTimer;
+  DateTime? _armedUntil;
+  int _tapCount = 0;
+  bool _ignoreReleaseTap = false;
+
+  @override
+  void dispose() {
+    _holdTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startHold() {
+    _holdTimer?.cancel();
+    _holdTimer = Timer(const Duration(seconds: 4), () {
+      _armedUntil = DateTime.now().add(const Duration(seconds: 6));
+      _tapCount = 0;
+      _ignoreReleaseTap = true;
+    });
+  }
+
+  void _endHold() {
+    _holdTimer?.cancel();
+    _holdTimer = null;
+  }
+
+  void _registerTap() {
+    if (_ignoreReleaseTap) {
+      _ignoreReleaseTap = false;
+      return;
+    }
+    final deadline = _armedUntil;
+    if (deadline == null || DateTime.now().isAfter(deadline)) {
+      _tapCount = 0;
+      _armedUntil = null;
+      return;
+    }
+    _tapCount++;
+    if (_tapCount < 3) return;
+    _tapCount = 0;
+    _armedUntil = null;
+    widget.onUnlocked();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: _registerTap,
+      child: Listener(
+        onPointerDown: (_) => _startHold(),
+        onPointerUp: (_) => _endHold(),
+        onPointerCancel: (_) => _endHold(),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          child: Text(widget.title),
+        ),
+      ),
     );
   }
 }

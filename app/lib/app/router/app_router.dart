@@ -62,8 +62,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: SetupScreen.routePath,
-        builder: (context, state) =>
-            SetupScreen(initialModeSlug: state.uri.queryParameters['mode']),
+        builder: (context, state) => SetupScreen(
+          initialModeSlug: state.uri.queryParameters['mode'],
+          editExisting: state.uri.queryParameters['edit'] == 'true',
+        ),
       ),
       GoRoute(
         path: PlayersScreen.routePath,

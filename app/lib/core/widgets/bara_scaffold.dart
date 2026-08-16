@@ -7,6 +7,7 @@ class BaraScaffold extends StatelessWidget {
   const BaraScaffold({
     required this.child,
     this.title,
+    this.titleWidget,
     this.actions,
     this.bottomNavigationBar,
     this.showBackButton = false,
@@ -15,6 +16,7 @@ class BaraScaffold extends StatelessWidget {
 
   final Widget child;
   final String? title;
+  final Widget? titleWidget;
   final List<Widget>? actions;
   final Widget? bottomNavigationBar;
   final bool showBackButton;
@@ -26,10 +28,10 @@ class BaraScaffold extends StatelessWidget {
 
     return Scaffold(
       extendBody: true,
-      appBar: title == null
+      appBar: title == null && titleWidget == null
           ? null
           : AppBar(
-              title: Text(title!),
+              title: titleWidget ?? Text(title!),
               leading: showBackButton ? const BackButton() : null,
               actions: actions,
             ),

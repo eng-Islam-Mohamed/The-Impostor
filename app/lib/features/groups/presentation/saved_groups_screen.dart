@@ -1,8 +1,10 @@
+import 'package:bara_alsalfa/core/i18n/ui_phrase_localizer.dart';
 import 'package:bara_alsalfa/core/widgets/bara_button.dart';
 import 'package:bara_alsalfa/core/widgets/bara_scaffold.dart';
 import 'package:bara_alsalfa/core/widgets/glow_card.dart';
 import 'package:bara_alsalfa/domain/models/saved_game_group.dart';
 import 'package:bara_alsalfa/features/game_setup/presentation/players_screen.dart';
+import 'package:bara_alsalfa/features/game_setup/presentation/setup_screen.dart';
 import 'package:bara_alsalfa/features/groups/application/saved_groups_controller.dart';
 import 'package:bara_alsalfa/features/round/application/game_session_controller.dart';
 import 'package:flutter/material.dart';
@@ -84,7 +86,7 @@ class SavedGroupsScreen extends ConsumerWidget {
     WidgetRef ref,
     SavedGameGroup group,
   ) async {
-    final resetScores = await showModalBottomSheet<bool>(
+    final action = await showModalBottomSheet<_GroupOpenAction>(
       context: context,
       showDragHandle: true,
       builder: (context) => SafeArea(
@@ -102,25 +104,42 @@ class SavedGroupsScreen extends ConsumerWidget {
               BaraButton.primary(
                 label: 'متابعة بالنتائج الحالية',
                 icon: Icons.history_rounded,
-                onPressed: () => Navigator.pop(context, false),
+                onPressed: () =>
+                    Navigator.pop(context, _GroupOpenAction.continueScores),
+              ),
+              const SizedBox(height: 10),
+              BaraButton.secondary(
+                label: localizeUiPhrase(ref, 'تعديل جميع الإعدادات'),
+                icon: Icons.tune_rounded,
+                onPressed: () =>
+                    Navigator.pop(context, _GroupOpenAction.editSettings),
               ),
               const SizedBox(height: 10),
               BaraButton.secondary(
                 label: 'بدء نتائج جديدة',
                 icon: Icons.restart_alt_rounded,
-                onPressed: () => Navigator.pop(context, true),
+                onPressed: () =>
+                    Navigator.pop(context, _GroupOpenAction.resetScores),
               ),
             ],
           ),
         ),
       ),
     );
-    if (resetScores == null) return;
+    if (action == null) return;
     await ref.read(savedGroupsProvider.notifier).activate(group.id);
     await ref
         .read(gameSessionProvider.notifier)
-        .loadSavedSession(group.session, resetScores: resetScores);
-    if (context.mounted) context.push(PlayersScreen.routePath);
+        .loadSavedSession(
+          group.session,
+          resetScores: action == _GroupOpenAction.resetScores,
+        );
+    if (!context.mounted) return;
+    context.push(
+      action == _GroupOpenAction.editSettings
+          ? '${SetupScreen.routePath}?edit=true'
+          : PlayersScreen.routePath,
+    );
   }
 
   Future<void> _editGroup(
@@ -132,7 +151,9 @@ class SavedGroupsScreen extends ConsumerWidget {
     await ref
         .read(gameSessionProvider.notifier)
         .loadSavedSession(group.session);
-    if (context.mounted) context.push(PlayersScreen.routePath);
+    if (context.mounted) {
+      context.push('${SetupScreen.routePath}?edit=true');
+    }
   }
 
   Future<void> _duplicateGroup(
@@ -282,7 +303,7 @@ class _GroupCard extends StatelessWidget {
               TextButton.icon(
                 onPressed: onEdit,
                 icon: const Icon(Icons.edit_rounded),
-                label: const Text('تعديل'),
+                label: const Text('كل الإعدادات'),
               ),
               TextButton.icon(
                 onPressed: onDuplicate,
@@ -301,3 +322,5 @@ class _GroupCard extends StatelessWidget {
     );
   }
 }
+
+enum _GroupOpenAction { continueScores, editSettings, resetScores }

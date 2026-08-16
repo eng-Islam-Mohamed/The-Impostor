@@ -12,6 +12,7 @@ import 'package:bara_alsalfa/domain/models/player_profile.dart';
 import 'package:bara_alsalfa/domain/models/round_outcome.dart';
 import 'package:bara_alsalfa/domain/models/round_phase.dart';
 import 'package:bara_alsalfa/domain/models/secret_assignment.dart';
+import 'package:bara_alsalfa/domain/models/secret_prank_config.dart';
 import 'package:bara_alsalfa/domain/services/game_engine.dart';
 import 'package:bara_alsalfa/features/profile/presentation/settings_controller.dart';
 import 'package:bara_alsalfa/features/groups/application/saved_groups_controller.dart';
@@ -351,6 +352,7 @@ class GameSessionState {
     required this.activatedOutsiderSkillIds,
     required this.outsiderWagerTargetIds,
     this.powerDensity = PowerDensity.balanced,
+    this.secretPrankConfig = const SecretPrankConfig(),
   });
 
   factory GameSessionState.initial({
@@ -387,6 +389,7 @@ class GameSessionState {
       activatedOutsiderSkillIds: const {},
       outsiderWagerTargetIds: const {},
       powerDensity: PowerDensity.balanced,
+      secretPrankConfig: const SecretPrankConfig(),
     );
   }
 
@@ -421,6 +424,7 @@ class GameSessionState {
       activatedOutsiderSkillIds: const {},
       outsiderWagerTargetIds: const {},
       powerDensity: session.powerDensity,
+      secretPrankConfig: session.secretPrankConfig,
     );
   }
 
@@ -453,6 +457,7 @@ class GameSessionState {
   final Set<String> activatedOutsiderSkillIds;
   final Map<String, String> outsiderWagerTargetIds;
   final PowerDensity powerDensity;
+  final SecretPrankConfig secretPrankConfig;
 
   bool get hasActiveRound => currentTopic != null && outsiderIds.isNotEmpty;
 
@@ -551,6 +556,7 @@ class GameSessionState {
     Set<String>? activatedOutsiderSkillIds,
     Map<String, String>? outsiderWagerTargetIds,
     PowerDensity? powerDensity,
+    SecretPrankConfig? secretPrankConfig,
   }) {
     return GameSessionState(
       players: players ?? this.players,
@@ -591,6 +597,7 @@ class GameSessionState {
       outsiderWagerTargetIds:
           outsiderWagerTargetIds ?? this.outsiderWagerTargetIds,
       powerDensity: powerDensity ?? this.powerDensity,
+      secretPrankConfig: secretPrankConfig ?? this.secretPrankConfig,
     );
   }
 }
@@ -736,8 +743,12 @@ class GameSessionController extends Notifier<GameSessionState> {
       return;
     }
 
+    final players = state.players.where((p) => p.id != playerId).toList();
     state = state.copyWith(
-      players: state.players.where((p) => p.id != playerId).toList(),
+      players: players,
+      secretPrankConfig: state.secretPrankConfig.sanitizedForPlayers(
+        players.map((player) => player.id).toSet(),
+      ),
     );
     _clampOutsiderCount();
     _persist();
@@ -764,6 +775,46 @@ class GameSessionController extends Notifier<GameSessionState> {
 
   void selectPack(String packId) {
     state = state.copyWith(selectedPackId: packId);
+    _persist();
+  }
+
+  bool verifySecretPrankPin(String pin) {
+    return pin.trim() == state.secretPrankConfig.pin;
+  }
+
+  void configureSecretPrank({
+    required Set<String> insiderPlayerIds,
+    required int? roundsRemaining,
+    String? newPin,
+  }) {
+    final validPlayerIds = state.players.map((player) => player.id).toSet();
+    final validInsiders = insiderPlayerIds.intersection(validPlayerIds);
+    final candidatePin = newPin?.trim();
+    final pin =
+        candidatePin != null && RegExp(r'^\d{4}$').hasMatch(candidatePin)
+        ? candidatePin
+        : state.secretPrankConfig.pin;
+    state = state.copyWith(
+      secretPrankConfig: SecretPrankConfig(
+        enabled: validInsiders.isNotEmpty,
+        pin: pin,
+        insiderPlayerIds: validInsiders,
+        roundsRemaining: roundsRemaining?.clamp(1, 10),
+      ),
+    );
+    _persist();
+  }
+
+  void disableSecretPrank({bool clearInsiders = true}) {
+    state = state.copyWith(
+      secretPrankConfig: state.secretPrankConfig.copyWith(
+        enabled: false,
+        insiderPlayerIds: clearInsiders
+            ? const <String>{}
+            : state.secretPrankConfig.insiderPlayerIds,
+        roundsRemaining: 0,
+      ),
+    );
     _persist();
   }
 
@@ -1018,6 +1069,9 @@ class GameSessionController extends Notifier<GameSessionState> {
           : nextGuessIndex,
       outsiderGuessAttempts: 0,
       phase: isLastGuess ? RoundPhase.results : RoundPhase.outsiderGuess,
+      secretPrankConfig: isLastGuess
+          ? state.secretPrankConfig.afterCompletedRound()
+          : state.secretPrankConfig,
     );
 
     _persist();
@@ -1191,6 +1245,9 @@ class GameSessionController extends Notifier<GameSessionState> {
         roundNumber: resetScores ? 1 : session.roundNumber,
         powerDensity: session.powerDensity,
         sequentialEliminationEnabled: session.sequentialEliminationEnabled,
+        secretPrankConfig: session.secretPrankConfig.sanitizedForPlayers(
+          players.map((player) => player.id).toSet(),
+        ),
       ),
     );
     _persist();
@@ -1360,6 +1417,7 @@ class GameSessionController extends Notifier<GameSessionState> {
       outsiderCount: state.outsiderCount,
       roundNumber: state.roundNumber,
       powerDensity: state.powerDensity,
+      secretPrankConfig: state.secretPrankConfig,
     );
   }
 

@@ -137,6 +137,9 @@ class SavedGroupsController extends Notifier<SavedGroupsState> {
       roundNumber: source.roundNumber,
       powerDensity: source.powerDensity,
       sequentialEliminationEnabled: source.sequentialEliminationEnabled,
+      secretPrankConfig: source.secretPrankConfig.sanitizedForPlayers(
+        players.map((player) => player.id).toSet(),
+      ),
     );
   }
 }

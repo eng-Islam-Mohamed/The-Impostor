@@ -70,6 +70,34 @@ void main() {
     expect(store.savedSession!.players.length, originalCount + 1);
   });
 
+  test('secret prank is persisted and follows stable player ids', () async {
+    final store = _MemoryGameSessionStore();
+    final container = ProviderContainer(
+      overrides: [gameSessionStoreProvider.overrideWithValue(store)],
+    );
+    addTearDown(container.dispose);
+
+    final controller = container.read(gameSessionProvider.notifier);
+    final insiderId = container.read(gameSessionProvider).players.last.id;
+    controller.configureSecretPrank(
+      insiderPlayerIds: {insiderId},
+      roundsRemaining: 3,
+      newPin: '2468',
+    );
+    controller.shufflePlayers();
+    await controller.flushPendingSaves();
+
+    expect(store.savedSession!.secretPrankConfig.enabled, isTrue);
+    expect(store.savedSession!.secretPrankConfig.pin, '2468');
+    expect(store.savedSession!.secretPrankConfig.insiderPlayerIds, {insiderId});
+
+    controller.removePlayer(insiderId);
+    await controller.flushPendingSaves();
+
+    expect(store.savedSession!.secretPrankConfig.enabled, isFalse);
+    expect(store.savedSession!.secretPrankConfig.insiderPlayerIds, isEmpty);
+  });
+
   test('resetting scores persists the score change', () async {
     final store = _MemoryGameSessionStore();
     final container = ProviderContainer(

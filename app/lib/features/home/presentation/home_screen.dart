@@ -157,6 +157,13 @@ class HomeScreen extends ConsumerWidget {
                         ),
                     ],
                   ),
+                  const SizedBox(height: 12),
+                  BaraButton.secondary(
+                    label: localizeUiPhrase(ref, 'تعديل جميع الإعدادات'),
+                    icon: Icons.tune_rounded,
+                    onPressed: () =>
+                        context.push('${SetupScreen.routePath}?edit=true'),
+                  ),
                 ],
               ),
             ),
