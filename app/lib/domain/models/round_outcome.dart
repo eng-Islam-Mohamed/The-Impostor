@@ -1,6 +1,21 @@
 import 'package:flutter/foundation.dart';
 
 @immutable
+class ScoreLedgerEntry {
+  const ScoreLedgerEntry({
+    required this.label,
+    required this.delta,
+    required this.balanceBefore,
+    required this.balanceAfter,
+  });
+
+  final String label;
+  final int delta;
+  final int balanceBefore;
+  final int balanceAfter;
+}
+
+@immutable
 class RoundOutcome {
   const RoundOutcome({
     required this.outsiderIds,
@@ -19,6 +34,8 @@ class RoundOutcome {
     this.outsiderGuessOptionsByPlayer = const {},
     this.powerEvents = const [],
     this.latestAccusedPlayerIds = const [],
+    this.wrongVoterIds = const [],
+    this.scoreLedger = const {},
   });
 
   final List<String> outsiderIds;
@@ -37,6 +54,8 @@ class RoundOutcome {
   final Map<String, List<String>> outsiderGuessOptionsByPlayer;
   final List<String> powerEvents;
   final List<String> latestAccusedPlayerIds;
+  final List<String> wrongVoterIds;
+  final Map<String, List<ScoreLedgerEntry>> scoreLedger;
 
   List<String> guessOptionsFor(String outsiderId) {
     return outsiderGuessOptionsByPlayer[outsiderId] ?? outsiderGuessOptions;
@@ -59,6 +78,8 @@ class RoundOutcome {
     Map<String, List<String>>? outsiderGuessOptionsByPlayer,
     List<String>? powerEvents,
     List<String>? latestAccusedPlayerIds,
+    List<String>? wrongVoterIds,
+    Map<String, List<ScoreLedgerEntry>>? scoreLedger,
   }) {
     return RoundOutcome(
       outsiderIds: outsiderIds ?? this.outsiderIds,
@@ -79,6 +100,8 @@ class RoundOutcome {
       powerEvents: powerEvents ?? this.powerEvents,
       latestAccusedPlayerIds:
           latestAccusedPlayerIds ?? this.latestAccusedPlayerIds,
+      wrongVoterIds: wrongVoterIds ?? this.wrongVoterIds,
+      scoreLedger: scoreLedger ?? this.scoreLedger,
     );
   }
 }

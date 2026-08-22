@@ -144,6 +144,10 @@ class PowerCardCatalog {
   static const highStakes = 'high_stakes';
   static const diplomaticImmunity = 'diplomatic_immunity';
   static const robinHood = 'robin_hood';
+  static const grandInversion = 'grand_inversion';
+  static const guillotine = 'guillotine';
+  static const allIn = 'all_in';
+  static const equalizer = 'equalizer';
   static const outsiderSecondChance = 'outsider_second_chance';
   static const outsiderChoicesFocus = 'outsider_choices_focus';
   static const outsiderFourChoice = 'outsider_four_choice';
@@ -152,6 +156,9 @@ class PowerCardCatalog {
   static const outsiderChaosWall = 'outsider_chaos_wall';
   static const outsiderPanicTimer = 'outsider_panic_timer';
   static const outsiderPointWager = 'outsider_point_wager';
+  static const outsiderCoup = 'outsider_coup';
+  static const outsiderHeadhunter = 'outsider_headhunter';
+  static const absoluteImmunity = 'absolute_immunity';
 
   static const innocentCardIds = <String>[
     doubleVote,
@@ -162,6 +169,11 @@ class PowerCardCatalog {
     highStakes,
     diplomaticImmunity,
     robinHood,
+    grandInversion,
+    guillotine,
+    allIn,
+    equalizer,
+    absoluteImmunity,
   ];
 
   static const outsiderCardIds = <String>[
@@ -173,6 +185,8 @@ class PowerCardCatalog {
     outsiderChaosWall,
     outsiderPanicTimer,
     outsiderPointWager,
+    outsiderCoup,
+    outsiderHeadhunter,
   ];
 
   static const all = <PowerCardDefinition>[
@@ -207,7 +221,7 @@ class PowerCardCatalog {
       id: tacticalAlliance,
       label: 'التحالف التكتيكي',
       description:
-          'كل اختيار صحيح ومتطابق بينك وبين حليفك يصبح بقيمة +3 لكل واحد منكما.',
+          'كل اختيار صحيح ومتطابق بينك وبين حليفك في جميع الدورات يمنح +3 لكل واحد منكما.',
       isAppliedByRules: true,
     ),
     PowerCardDefinition(
@@ -228,7 +242,35 @@ class PowerCardCatalog {
       id: robinHood,
       label: 'روبن هود',
       description:
-          'إذا كانت كل اختياراتك صحيحة، تسحب نقطتين من متصدر الترتيب وتضيفهما لرصيدك.',
+          'إذا كانت كل اختياراتك صحيحة، تسحب ربع نقاط متصدر الترتيب وتضيفها لرصيدك.',
+      isAppliedByRules: true,
+    ),
+    PowerCardDefinition(
+      id: grandInversion,
+      label: 'الانقلاب العظيم (تبادل الرصيد مع المتصدر)',
+      description:
+          'إذا كان تصويتك صحيحاً وتاماً 100%، تتبادل كامل رصيدك مع المتصدر وتعتلي القمة! وإذا أخطأت تخسر 5 نقاط ويكسب المتصدر +3 حماية.',
+      isAppliedByRules: true,
+    ),
+    PowerCardDefinition(
+      id: guillotine,
+      label: 'المقصلة (تصفير المتصدر)',
+      description:
+          'التصويت المثالي يصفر رصيد المتصدر فوراً ويمنحك نصف نقاطه! والخطأ يصفر رصيدك أنت وينقله للمتصدر.',
+      isAppliedByRules: true,
+    ),
+    PowerCardDefinition(
+      id: allIn,
+      label: 'الكل أو اللاشيء (مضاعفة x3)',
+      description:
+          'التصويت المثالي يضاعف كامل رصيدك التراكمي 3 أضعاف! وأي خطأ أو إقصاء يصفر رصيدك بالكامل إلى 0.',
+      isAppliedByRules: true,
+    ),
+    PowerCardDefinition(
+      id: equalizer,
+      label: 'الميزان العادل (توزيع الثروات)',
+      description:
+          'التصويت المثالي يجمع نقاط جميع اللاعبين ويقسمها بالتساوي على الجميع لإعادة التنافس لنقطة البداية.',
       isAppliedByRules: true,
     ),
     PowerCardDefinition(
@@ -278,6 +320,27 @@ class PowerCardCatalog {
       description:
           'اختر لاعباً ثم خمن من كل سوالف الفئة. الصحيح يكسبك نصف رصيده ويخصمه منه، والخاطئ يخسرك الرهان ويمنحه +2.',
     ),
+    PowerCardDefinition(
+      id: outsiderCoup,
+      label: 'انقلاب برا السالفة (سرقة العرش)',
+      description:
+          'إذا خمنت السالفة من المحاولة الأولى تسحب كامل رصيد المتصدر ويصبح رصيده 0! والفشل يخصم منك 6 نقاط.',
+      isAppliedByRules: true,
+    ),
+    PowerCardDefinition(
+      id: outsiderHeadhunter,
+      label: 'قاطع الرؤوس (لبرا السالفة)',
+      description:
+          'اختر ضحية؛ إذا خمنت السالفة من المحاولة الأولى تسحب كامل رصيدها وتصفرها! والفشل يخصم منك 4 نقاط ويمنحها +2.',
+      isAppliedByRules: true,
+    ),
+    PowerCardDefinition(
+      id: absoluteImmunity,
+      label: 'الحصانة (درع مطلق)',
+      description:
+          'يحميك من كل محاولات السلب والسرقة! السطو التكتيكي يفشل، ورصيدك محذوف من سبيكة الجاكبوت، وأنت غير مرئي لأي هجوم من برا السالفة أو مهارات الإقصاء.',
+      isAppliedByRules: true,
+    ),
   ];
 
   static const defaultEnabledIds = <String>{
@@ -289,6 +352,11 @@ class PowerCardCatalog {
     highStakes,
     diplomaticImmunity,
     robinHood,
+    grandInversion,
+    guillotine,
+    allIn,
+    equalizer,
+    absoluteImmunity,
     outsiderSecondChance,
     outsiderChoicesFocus,
     outsiderFourChoice,
@@ -297,6 +365,8 @@ class PowerCardCatalog {
     outsiderChaosWall,
     outsiderPanicTimer,
     outsiderPointWager,
+    outsiderCoup,
+    outsiderHeadhunter,
   };
 
   static PowerCardDefinition byId(String payload) {
@@ -514,8 +584,10 @@ class GameSessionState {
 
   bool get currentOutsiderNeedsWagerTarget {
     final outsider = currentOutsiderGuesser;
+    final cardId = currentOutsiderCardId;
     return outsider != null &&
-        currentOutsiderCardId == PowerCardCatalog.outsiderPointWager &&
+        (cardId == PowerCardCatalog.outsiderPointWager ||
+            cardId == PowerCardCatalog.outsiderHeadhunter) &&
         !outsiderWagerTargetIds.containsKey(outsider.id);
   }
 
@@ -725,11 +797,17 @@ class GameSessionController extends Notifier<GameSessionState> {
     }
 
     final locale = ref.read(appSettingsProvider).locale;
-    final nextIndex = state.players.length + 1;
+    final existingIds = state.players.map((p) => p.id).toSet();
+    var candidateIndex = 1;
+    while (existingIds.contains('p$candidateIndex')) {
+      candidateIndex++;
+    }
+    final nextId = 'p$candidateIndex';
+    final nextDisplayIndex = state.players.length + 1;
     final newPlayer = PlayerProfile(
-      id: 'p$nextIndex',
-      name: defaultPlayerName(nextIndex, locale),
-      avatarIndex: nextIndex % 8,
+      id: nextId,
+      name: defaultPlayerName(nextDisplayIndex, locale),
+      avatarIndex: (candidateIndex - 1) % 8,
       score: 0,
     );
 
@@ -941,6 +1019,8 @@ class GameSessionController extends Notifier<GameSessionState> {
               previous: state.outcome!,
               current: cycleOutcome,
               survivingOutsiderIds: survivingOutsiders,
+              players: state.players,
+              assignedPowerCards: state.powerCards,
             )
           : cycleOutcome.copyWith(survivingOutsiderIds: survivingOutsiders);
 
@@ -1011,11 +1091,16 @@ class GameSessionController extends Notifier<GameSessionState> {
       return;
     }
 
-    final card = PowerCardCatalog.parseCardId(
-      state.powerCards[currentOutsider.id] ?? '',
-    );
-    if (card == PowerCardCatalog.outsiderPointWager &&
-        !state.outsiderWagerTargetIds.containsKey(currentOutsider.id)) {
+    final rawPayload = state.powerCards[currentOutsider.id] ?? '';
+    final card = PowerCardCatalog.parseCardId(rawPayload);
+    final cardTargetId = PowerCardCatalog.parseTargetId(rawPayload);
+
+    final isPointWager = card == PowerCardCatalog.outsiderPointWager;
+    final isHeadhunter = card == PowerCardCatalog.outsiderHeadhunter;
+
+    if ((isPointWager || isHeadhunter) &&
+        !state.outsiderWagerTargetIds.containsKey(currentOutsider.id) &&
+        cardTargetId == null) {
       return;
     }
     final isSecondChance = card == PowerCardCatalog.outsiderSecondChance;
@@ -1027,15 +1112,17 @@ class GameSessionController extends Notifier<GameSessionState> {
       return;
     }
 
-    final wagerTargetId = state.outsiderWagerTargetIds[currentOutsider.id];
+    final wagerTargetId =
+        cardTargetId ?? state.outsiderWagerTargetIds[currentOutsider.id];
+
     final wagerTarget = wagerTargetId == null
         ? null
         : state.players.firstWhereOrNull(
             (player) => player.id == wagerTargetId,
           );
-    final wagerStake = wagerTarget == null
-        ? 0
-        : max(1, (wagerTarget.score.abs() + 1) ~/ 2);
+    final wagerStake = (isPointWager && wagerTarget != null)
+        ? max(1, (wagerTarget.score.abs() + 1) ~/ 2)
+        : 0;
     final highRisk = card == PowerCardCatalog.outsiderHighRisk;
     final nextOutcome = _engine.finalizeOutsiderGuess(
       outcome: outcome,
@@ -1053,6 +1140,9 @@ class GameSessionController extends Notifier<GameSessionState> {
           : 1,
       wagerTargetId: wagerTargetId,
       wagerStake: wagerStake,
+      powerCardId: card,
+      players: state.players,
+      assignedPowerCards: state.powerCards,
     );
 
     final nextGuessIndex = state.outsiderGuessIndex + 1;
@@ -1078,12 +1168,12 @@ class GameSessionController extends Notifier<GameSessionState> {
   }
 
   void activateFourChoiceForCurrentOutsider() {
-    final outsider = state.currentOutsiderGuesser;
+    final currentOutsider = state.currentOutsiderGuesser;
     final outcome = state.outcome;
-    if (outsider == null ||
+    if (currentOutsider == null ||
         outcome == null ||
         state.currentOutsiderCardId != PowerCardCatalog.outsiderFourChoice ||
-        state.activatedOutsiderSkillIds.contains(outsider.id)) {
+        state.activatedOutsiderSkillIds.contains(currentOutsider.id)) {
       return;
     }
     final options = _engine.buildOutsiderGuessOptions(
@@ -1095,12 +1185,12 @@ class GameSessionController extends Notifier<GameSessionState> {
       outcome: outcome.copyWith(
         outsiderGuessOptionsByPlayer: {
           ...outcome.outsiderGuessOptionsByPlayer,
-          outsider.id: options,
+          currentOutsider.id: options,
         },
       ),
       activatedOutsiderSkillIds: {
         ...state.activatedOutsiderSkillIds,
-        outsider.id,
+        currentOutsider.id,
       },
     );
     _persist();
@@ -1108,8 +1198,10 @@ class GameSessionController extends Notifier<GameSessionState> {
 
   void selectOutsiderWagerTarget(String playerId) {
     final outsider = state.currentOutsiderGuesser;
+    final cardId = state.currentOutsiderCardId;
     if (outsider == null ||
-        state.currentOutsiderCardId != PowerCardCatalog.outsiderPointWager ||
+        (cardId != PowerCardCatalog.outsiderPointWager &&
+            cardId != PowerCardCatalog.outsiderHeadhunter) ||
         playerId == outsider.id ||
         !state.players.any((player) => player.id == playerId)) {
       return;
@@ -1355,12 +1447,25 @@ class GameSessionController extends Notifier<GameSessionState> {
       if (outsiderIds.contains(player.id)) {
         if (outsiderPool.isNotEmpty) {
           outsiderPool.shuffle(random);
-          assigned[player.id] = outsiderPool.first;
+          final picked = outsiderPool.first;
+          assigned[player.id] = picked;
+          if (outsiderPool.length > 1) outsiderPool.remove(picked);
         }
       } else {
         if (innocentPool.isNotEmpty) {
           innocentPool.shuffle(random);
           final picked = innocentPool.first;
+          const transformingCards = {
+            PowerCardCatalog.grandInversion,
+            PowerCardCatalog.guillotine,
+            PowerCardCatalog.allIn,
+            PowerCardCatalog.equalizer,
+          };
+          if (transformingCards.contains(picked)) {
+            innocentPool.removeWhere(transformingCards.contains);
+          } else if (innocentPool.length > 1) {
+            innocentPool.remove(picked);
+          }
           if (picked == PowerCardCatalog.tacticalDrain) {
             final victimPool = state.players
                 .where((p) => p.id != player.id)
@@ -1372,9 +1477,19 @@ class GameSessionController extends Notifier<GameSessionState> {
             } else {
               assigned[player.id] = PowerCardCatalog.doubleVote;
             }
+          } else if (picked == PowerCardCatalog.guillotine) {
+            assigned[player.id] = PowerCardCatalog.guillotine;
           } else if (picked == PowerCardCatalog.tacticalAlliance) {
             final allyPool = state.players
-                .where((p) => p.id != player.id)
+                .where(
+                  (p) =>
+                      p.id != player.id &&
+                      !outsiderIds.contains(p.id) &&
+                      !(assigned[p.id]?.startsWith(
+                            PowerCardCatalog.tacticalAlliance,
+                          ) ??
+                          false),
+                )
                 .toList();
             if (allyPool.isNotEmpty) {
               allyPool.shuffle(random);
@@ -1386,6 +1501,8 @@ class GameSessionController extends Notifier<GameSessionState> {
           } else {
             assigned[player.id] = picked;
           }
+        } else {
+          assigned[player.id] = PowerCardCatalog.doubleVote;
         }
       }
     }

@@ -260,8 +260,8 @@ void main() {
           },
         );
 
-        expect(outcomePos.scoreDeltas['p1'], 8);
-        expect(outcomePos.scoreDeltas['p2'], -8);
+        expect(outcomePos.scoreDeltas['p1'], 7);
+        expect(outcomePos.scoreDeltas['p2'], -7);
 
         // Negative victim score test:
         final seededPlayersNegative = [
@@ -283,10 +283,9 @@ void main() {
           },
         );
 
-        // p1 gets +1 (vote) + (-3) = -2.
-        // p2 gets -1 (vote) - (-3) = +2 (so final score becomes -3 + 2 + 1 = 0).
-        expect(outcomeNeg.scoreDeltas['p1'], -2);
-        expect(outcomeNeg.scoreDeltas['p2'], 2);
+        // The post-vote balance is transferred, then the victim is exactly zero.
+        expect(outcomeNeg.scoreDeltas['p1'], -3);
+        expect(outcomeNeg.scoreDeltas['p2'], 3);
       },
     );
 
@@ -629,6 +628,1011 @@ void main() {
       expect(eliminated.isTie, isFalse);
       expect(tied.latestAccusedPlayerIds, isEmpty);
       expect(tied.isTie, isTrue);
+    });
+
+    test(
+      'mergeVotingOutcomes does not multiply Jackpot or Tactical Drain across sequential rounds',
+      () {
+        final engine = GameEngine(random: Random(35));
+        final seededPlayers = [
+          const PlayerProfile(
+            id: 'p0',
+            name: 'Outsider 1',
+            avatarIndex: 0,
+            score: 0,
+          ),
+          const PlayerProfile(
+            id: 'p1',
+            name: 'Outsider 2',
+            avatarIndex: 1,
+            score: 0,
+          ),
+          const PlayerProfile(
+            id: 'p2',
+            name: 'Jackpot Player',
+            avatarIndex: 2,
+            score: 0,
+          ),
+          const PlayerProfile(
+            id: 'p3',
+            name: 'Drain Player',
+            avatarIndex: 3,
+            score: 0,
+          ),
+          const PlayerProfile(
+            id: 'p4',
+            name: 'Victim',
+            avatarIndex: 4,
+            score: 10,
+          ),
+        ];
+
+        // Cycle 1: p0 (Outsider 1) eliminated
+        final cycle1 = engine.resolveRound(
+          players: seededPlayers,
+          outsiderIds: const ['p0', 'p1'],
+          topic: 'Algeria',
+          topicPool: pack.topics,
+          accusationLimit: 1,
+          assignedPowerCards: const {
+            'p2': 'jackpot',
+            'p3': 'tactical_drain:p4',
+          },
+          votes: const {
+            'p0': ['p2'],
+            'p1': ['p2'],
+            'p2': ['p0'], // Correct vote on p0
+            'p3': ['p0'], // Correct vote on p0
+            'p4': ['p0'],
+          },
+        );
+
+        // Cycle 2: p1 (Outsider 2) eliminated
+        final cycle2 = engine.resolveRound(
+          players: seededPlayers,
+          outsiderIds: const ['p0', 'p1'],
+          topic: 'Algeria',
+          topicPool: pack.topics,
+          accusationLimit: 1,
+          assignedPowerCards: const {
+            'p2': 'jackpot',
+            'p3': 'tactical_drain:p4',
+          },
+          votes: const {
+            'p0': ['p2'],
+            'p1': ['p2'],
+            'p2': ['p1'], // Correct vote on p1
+            'p3': ['p1'], // Correct vote on p1
+            'p4': ['p1'],
+          },
+        );
+
+        final merged = engine.mergeVotingOutcomes(
+          previous: cycle1,
+          current: cycle2,
+          survivingOutsiderIds: const [],
+          players: seededPlayers,
+          assignedPowerCards: const {
+            'p2': 'jackpot',
+            'p3': 'tactical_drain:p4',
+          },
+        );
+
+        // Jackpot should be 2 votes + 10 (pot of p4) = 12 (NOT 22 or doubled pot!)
+        expect(merged.voteScoreDeltas['p2'], 2);
+        expect(merged.scoreDeltas['p2'], 12);
+
+        // Tactical Drain transfers the victim's post-vote balance and leaves it at zero.
+        expect(merged.voteScoreDeltas['p3'], 2);
+        expect(merged.scoreDeltas['p3'], 14);
+        expect(merged.scoreDeltas['p4'], -10);
+
+        // Power events should be deduplicated (not listed twice)
+        final jackpotEvents = merged.powerEvents
+            .where((e) => e.contains('الجاكبوت'))
+            .toList();
+        final drainEvents = merged.powerEvents
+            .where((e) => e.contains('السطو التكتيكي'))
+            .toList();
+        expect(jackpotEvents, hasLength(1));
+        expect(drainEvents, hasLength(1));
+      },
+    );
+
+    test(
+      'Grand Inversion swaps scores with leader on perfect vote and penalizes on failure',
+      () {
+        final engine = GameEngine(random: Random(10));
+        final testPlayers = [
+          const PlayerProfile(
+            id: 'p0',
+            name: 'Outsider',
+            avatarIndex: 0,
+            score: 0,
+          ),
+          const PlayerProfile(
+            id: 'p1',
+            name: 'Leader',
+            avatarIndex: 1,
+            score: 30,
+          ),
+          const PlayerProfile(
+            id: 'p2',
+            name: 'Last Player',
+            avatarIndex: 2,
+            score: 2,
+          ),
+        ];
+
+        // Perfect vote
+        final success = engine.resolveRound(
+          players: testPlayers,
+          outsiderIds: const ['p0'],
+          topic: 'Algeria',
+          topicPool: pack.topics,
+          assignedPowerCards: const {'p2': 'grand_inversion'},
+          votes: const {
+            'p0': ['p1'],
+            'p1': ['p0'],
+            'p2': ['p0'],
+          },
+        );
+        // p2 delta: +1 (vote) + 28 (swap) = 29 -> new score = 2 + 29 = 31 (takes top spot)
+        // p1 delta: +1 (vote) - 28 (swap) = -27 -> new score = 30 - 27 = 3 (drops to bottom)
+        expect(success.scoreDeltas['p2'], 29);
+        expect(success.scoreDeltas['p1'], -27);
+
+        // Failed vote
+        final failure = engine.resolveRound(
+          players: testPlayers,
+          outsiderIds: const ['p0'],
+          topic: 'Algeria',
+          topicPool: pack.topics,
+          assignedPowerCards: const {'p2': 'grand_inversion'},
+          votes: const {
+            'p0': ['p1'],
+            'p1': ['p0'],
+            'p2': ['p1'],
+          }, // Wrong vote on p1
+        );
+        expect(failure.scoreDeltas['p2'], -6); // -1 (vote) - 5 (penalty)
+        expect(failure.scoreDeltas['p1'], 4); // +1 (vote) + 3 (protection)
+      },
+    );
+
+    test(
+      'The Guillotine zeroes leader and grants half points on success, reverses on failure',
+      () {
+        final engine = GameEngine(random: Random(11));
+        final testPlayers = [
+          const PlayerProfile(
+            id: 'p0',
+            name: 'Outsider',
+            avatarIndex: 0,
+            score: 0,
+          ),
+          const PlayerProfile(
+            id: 'p1',
+            name: 'Leader',
+            avatarIndex: 1,
+            score: 20,
+          ),
+          const PlayerProfile(
+            id: 'p2',
+            name: 'Attacker',
+            avatarIndex: 2,
+            score: 10,
+          ),
+        ];
+
+        // Perfect vote
+        final success = engine.resolveRound(
+          players: testPlayers,
+          outsiderIds: const ['p0'],
+          topic: 'Algeria',
+          topicPool: pack.topics,
+          assignedPowerCards: const {'p2': 'guillotine:p1'},
+          votes: const {
+            'p0': ['p1'],
+            'p1': ['p0'],
+            'p2': ['p0'],
+          },
+        );
+        expect(success.scoreDeltas['p1'], -20);
+        expect(success.scoreDeltas['p2'], 12);
+
+        // Failed vote
+        final failure = engine.resolveRound(
+          players: testPlayers,
+          outsiderIds: const ['p0'],
+          topic: 'Algeria',
+          topicPool: pack.topics,
+          assignedPowerCards: const {'p2': 'guillotine:p1'},
+          votes: const {
+            'p0': ['p1'],
+            'p1': ['p0'],
+            'p2': ['p1'],
+          },
+        );
+        expect(failure.scoreDeltas['p2'], -10);
+        expect(failure.scoreDeltas['p1'], 10);
+      },
+    );
+
+    test(
+      'All-In triples score on success and bankrupts to zero on failure',
+      () {
+        final engine = GameEngine(random: Random(12));
+        final testPlayers = [
+          const PlayerProfile(
+            id: 'p0',
+            name: 'Outsider',
+            avatarIndex: 0,
+            score: 0,
+          ),
+          const PlayerProfile(
+            id: 'p1',
+            name: 'Gambler',
+            avatarIndex: 1,
+            score: 15,
+          ),
+        ];
+
+        final success = engine.resolveRound(
+          players: testPlayers,
+          outsiderIds: const ['p0'],
+          topic: 'Algeria',
+          topicPool: pack.topics,
+          assignedPowerCards: const {'p1': 'all_in'},
+          votes: const {
+            'p0': ['p1'],
+            'p1': ['p0'],
+          },
+        );
+        expect(success.scoreDeltas['p1'], 33);
+
+        final failure = engine.resolveRound(
+          players: testPlayers,
+          outsiderIds: const ['p0'],
+          topic: 'Algeria',
+          topicPool: pack.topics,
+          assignedPowerCards: const {'p1': 'all_in'},
+          votes: const {
+            'p0': ['p1'],
+            'p1': ['p1'],
+          },
+        );
+        expect(failure.scoreDeltas['p1'], -15);
+      },
+    );
+
+    test('Equalizer splits all positive points equally across roster', () {
+      final engine = GameEngine(random: Random(13));
+      final testPlayers = [
+        const PlayerProfile(
+          id: 'p0',
+          name: 'Outsider',
+          avatarIndex: 0,
+          score: 0,
+        ),
+        const PlayerProfile(id: 'p1', name: 'Rich', avatarIndex: 1, score: 30),
+        const PlayerProfile(id: 'p2', name: 'Poor 1', avatarIndex: 2, score: 5),
+        const PlayerProfile(id: 'p3', name: 'Poor 2', avatarIndex: 3, score: 5),
+      ];
+
+      final success = engine.resolveRound(
+        players: testPlayers,
+        outsiderIds: const ['p0'],
+        topic: 'Algeria',
+        topicPool: pack.topics,
+        assignedPowerCards: const {'p2': 'equalizer'},
+        votes: const {
+          'p0': ['p1'],
+          'p1': ['p0'],
+          'p2': ['p0'],
+          'p3': ['p0'],
+        },
+      );
+      // The post-vote pot is split once; every final balance is exactly 10.
+      expect(success.scoreDeltas['p0'], 10);
+      expect(success.scoreDeltas['p1'], -20);
+      expect(success.scoreDeltas['p2'], 5);
+      expect(success.scoreDeltas['p3'], 5);
+    });
+
+    test(
+      'Outsider Coup steals leader score on correct guess, penalizes 6 on failure',
+      () {
+        final engine = GameEngine(random: Random(14));
+        final testPlayers = [
+          const PlayerProfile(
+            id: 'p0',
+            name: 'Outsider',
+            avatarIndex: 0,
+            score: 0,
+          ),
+          const PlayerProfile(
+            id: 'p1',
+            name: 'Leader',
+            avatarIndex: 1,
+            score: 25,
+          ),
+        ];
+        final base = engine.resolveRound(
+          players: testPlayers,
+          outsiderIds: const ['p0'],
+          topic: 'Algeria',
+          topicPool: pack.topics,
+          assignedPowerCards: const {'p0': 'outsider_coup'},
+          votes: const {
+            'p0': ['p1'],
+            'p1': ['p0'],
+          },
+        );
+
+        final correct = engine.finalizeOutsiderGuess(
+          outcome: base,
+          outsiderId: 'p0',
+          guessedTopic: 'Algeria',
+          powerCardId: 'outsider_coup',
+          players: testPlayers,
+        );
+        expect(correct.scoreDeltas['p0'], 26);
+        expect(correct.scoreDeltas['p1'], -25);
+
+        final wrong = engine.finalizeOutsiderGuess(
+          outcome: base,
+          outsiderId: 'p0',
+          guessedTopic: 'France',
+          powerCardId: 'outsider_coup',
+          players: testPlayers,
+        );
+        expect(wrong.scoreDeltas['p0'], -6);
+      },
+    );
+
+    test(
+      'Flawless rule denies reward if player voted wrong or was eliminated in sequential mode',
+      () {
+        final engine = GameEngine(random: Random(15));
+        final testPlayers = [
+          const PlayerProfile(
+            id: 'p0',
+            name: 'Outsider 1',
+            avatarIndex: 0,
+            score: 0,
+          ),
+          const PlayerProfile(
+            id: 'p1',
+            name: 'Outsider 2',
+            avatarIndex: 1,
+            score: 0,
+          ),
+          const PlayerProfile(
+            id: 'p2',
+            name: 'Player With Jackpot',
+            avatarIndex: 2,
+            score: 0,
+          ),
+          const PlayerProfile(
+            id: 'p3',
+            name: 'Innocent',
+            avatarIndex: 3,
+            score: 10,
+          ),
+        ];
+
+        // Cycle 1: p2 votes WRONG on p3 (innocent)
+        final cycle1 = engine.resolveRound(
+          players: testPlayers,
+          outsiderIds: const ['p0', 'p1'],
+          topic: 'Algeria',
+          topicPool: pack.topics,
+          accusationLimit: 1,
+          assignedPowerCards: const {'p2': 'jackpot'},
+          votes: const {
+            'p0': ['p3'],
+            'p1': ['p3'],
+            'p2': ['p3'],
+            'p3': ['p0'],
+          },
+        );
+
+        // Cycle 2: p2 votes correct on p0
+        final cycle2 = engine.resolveRound(
+          players: testPlayers,
+          outsiderIds: const ['p0', 'p1'],
+          topic: 'Algeria',
+          topicPool: pack.topics,
+          accusationLimit: 1,
+          assignedPowerCards: const {'p2': 'jackpot'},
+          votes: const {
+            'p0': ['p2'],
+            'p1': ['p2'],
+            'p2': ['p0'],
+            'p3': ['p0'],
+          },
+        );
+
+        final merged = engine.mergeVotingOutcomes(
+          previous: cycle1,
+          current: cycle2,
+          survivingOutsiderIds: const ['p1'],
+        );
+
+        // Because p2 made a wrong vote in cycle 1, Jackpot bonus is DENIED (0 jackpot)
+        // Net score delta for p2 = -1 (wrong vote cycle 1) + 1 (correct vote cycle 2) = 0
+        expect(merged.voteScoreDeltas['p2'], 0);
+        expect(merged.scoreDeltas['p2'], 0);
+      },
+    );
+
+    test(
+      'Outsider Headhunter wipes target score on success and penalizes 4 on failure',
+      () {
+        final engine = GameEngine(random: Random(16));
+        final testPlayers = [
+          const PlayerProfile(
+            id: 'p0',
+            name: 'Outsider',
+            avatarIndex: 0,
+            score: 0,
+          ),
+          const PlayerProfile(
+            id: 'p1',
+            name: 'Innocent Target',
+            avatarIndex: 1,
+            score: 18,
+          ),
+          const PlayerProfile(
+            id: 'p2',
+            name: 'Other Player',
+            avatarIndex: 2,
+            score: 5,
+          ),
+        ];
+
+        final base = engine.resolveRound(
+          players: testPlayers,
+          outsiderIds: const ['p0'],
+          topic: 'Algeria',
+          topicPool: pack.topics,
+          assignedPowerCards: const {'p0': 'outsider_headhunter:p1'},
+          votes: const {
+            'p0': ['p1'],
+            'p1': ['p0'],
+            'p2': ['p0'],
+          },
+        );
+
+        // Correct guess on Attempt 1
+        final correct = engine.finalizeOutsiderGuess(
+          outcome: base,
+          outsiderId: 'p0',
+          guessedTopic: 'Algeria',
+          wagerTargetId: 'p1',
+          powerCardId: 'outsider_headhunter',
+          players: testPlayers,
+        );
+        // The full post-vote balance is stolen and the target finishes at zero.
+        expect(correct.scoreDeltas['p0'], 19);
+        expect(correct.scoreDeltas['p1'], -18);
+
+        // Failed guess
+        final wrong = engine.finalizeOutsiderGuess(
+          outcome: base,
+          outsiderId: 'p0',
+          guessedTopic: 'Spain',
+          wagerTargetId: 'p1',
+          powerCardId: 'outsider_headhunter',
+          players: testPlayers,
+        );
+        // p0 loses 4
+        expect(wrong.scoreDeltas['p0'], -4);
+        // p1 gets +2 points
+        expect(wrong.scoreDeltas['p1'], 3); // 1 (vote) + 2 (penalty reward) = 3
+      },
+    );
+
+    test(
+      'Tactical Drain is strictly denied across cycles if player made any wrong vote, and victim is untouched',
+      () {
+        final engine = GameEngine(random: Random(17));
+        final testPlayers = [
+          const PlayerProfile(
+            id: 'p0',
+            name: 'Outsider',
+            avatarIndex: 0,
+            score: 0,
+          ),
+          const PlayerProfile(
+            id: 'p1',
+            name: 'Drainer',
+            avatarIndex: 1,
+            score: 0,
+          ),
+          const PlayerProfile(
+            id: 'p2',
+            name: 'Victim',
+            avatarIndex: 2,
+            score: 12,
+          ),
+          const PlayerProfile(
+            id: 'p3',
+            name: 'Other Innocent',
+            avatarIndex: 3,
+            score: 0,
+          ),
+        ];
+
+        // Cycle 1: p1 votes wrong on p3
+        final cycle1 = engine.resolveRound(
+          players: testPlayers,
+          outsiderIds: const ['p0'],
+          topic: 'Algeria',
+          topicPool: pack.topics,
+          accusationLimit: 1,
+          assignedPowerCards: const {'p1': 'tactical_drain:p2'},
+          votes: const {
+            'p0': ['p3'],
+            'p1': ['p3'],
+            'p2': ['p3'],
+            'p3': ['p0'],
+          },
+        );
+
+        // Cycle 2: p1 votes correct on p0
+        final cycle2 = engine.resolveRound(
+          players: testPlayers,
+          outsiderIds: const ['p0'],
+          topic: 'Algeria',
+          topicPool: pack.topics,
+          accusationLimit: 1,
+          assignedPowerCards: const {'p1': 'tactical_drain:p2'},
+          votes: const {
+            'p0': ['p2'],
+            'p1': ['p0'],
+            'p2': ['p0'],
+          },
+        );
+
+        final merged = engine.mergeVotingOutcomes(
+          previous: cycle1,
+          current: cycle2,
+          survivingOutsiderIds: const [],
+          players: testPlayers,
+          assignedPowerCards: const {'p1': 'tactical_drain:p2'},
+        );
+
+        // p1 made a wrong vote in cycle 1, so tactical drain is DENIED:
+        // p1 score delta = -1 (cycle 1) + 1 (cycle 2) = 0
+        expect(merged.scoreDeltas['p1'], 0);
+        // Victim p2 is unharmed (0 stolen):
+        // p2 score delta = -1 (cycle 1) + 1 (cycle 2) = 0
+        expect(merged.scoreDeltas['p2'], 0);
+        // No tactical drain power event
+        expect(
+          merged.powerEvents.where((e) => e.contains('السطو التكتيكي')),
+          isEmpty,
+        );
+      },
+    );
+
+    test(
+      'Absolute Immunity blocks Tactical Drain and leaves both scores intact',
+      () {
+        final engine = GameEngine(random: Random(20));
+        final testPlayers = [
+          const PlayerProfile(
+            id: 'p0',
+            name: 'Outsider',
+            avatarIndex: 0,
+            score: 0,
+          ),
+          const PlayerProfile(
+            id: 'p1',
+            name: 'Drainer',
+            avatarIndex: 1,
+            score: 2,
+          ),
+          const PlayerProfile(
+            id: 'p2',
+            name: 'Immune Victim',
+            avatarIndex: 2,
+            score: 15,
+          ),
+        ];
+
+        final outcome = engine.resolveRound(
+          players: testPlayers,
+          outsiderIds: const ['p0'],
+          topic: 'Algeria',
+          topicPool: pack.topics,
+          assignedPowerCards: const {
+            'p1': 'tactical_drain:p2',
+            'p2': 'absolute_immunity',
+          },
+          votes: const {
+            'p0': ['p1'],
+            'p1': ['p0'], // Perfect vote
+            'p2': ['p0'],
+          },
+        );
+
+        // p1 gets +1 (vote), but 0 drain points (blocked)
+        expect(outcome.scoreDeltas['p1'], 1);
+        // p2 gets +1 (vote), 0 stolen points (protected)
+        expect(outcome.scoreDeltas['p2'], 1);
+        expect(
+          outcome.powerEvents.any((e) => e.contains('الحصانة: تصدّى')),
+          isTrue,
+        );
+      },
+    );
+
+    test('Absolute Immunity excludes player from Jackpot pot', () {
+      final engine = GameEngine(random: Random(21));
+      final testPlayers = [
+        const PlayerProfile(
+          id: 'p0',
+          name: 'Outsider',
+          avatarIndex: 0,
+          score: 0,
+        ),
+        const PlayerProfile(
+          id: 'p1',
+          name: 'Jackpot Player',
+          avatarIndex: 1,
+          score: 0,
+        ),
+        const PlayerProfile(
+          id: 'p2',
+          name: 'Normal Player',
+          avatarIndex: 2,
+          score: 10,
+        ),
+        const PlayerProfile(
+          id: 'p3',
+          name: 'Immune Player',
+          avatarIndex: 3,
+          score: 20,
+        ),
+      ];
+
+      final outcome = engine.resolveRound(
+        players: testPlayers,
+        outsiderIds: const ['p0'],
+        topic: 'Algeria',
+        topicPool: pack.topics,
+        assignedPowerCards: const {'p1': 'jackpot', 'p3': 'absolute_immunity'},
+        votes: const {
+          'p0': ['p1'],
+          'p1': ['p0'],
+          'p2': ['p0'],
+          'p3': ['p0'],
+        },
+      );
+
+      // Pot should only include p2 (10 points), NOT p3 (20 points):
+      // p1 gain = 10 (pot) + 1 (vote) = 11
+      expect(outcome.scoreDeltas['p1'], 11);
+    });
+
+    test('Robin Hood steals exactly 1/4 of leader points', () {
+      final engine = GameEngine(random: Random(22));
+      final testPlayers = [
+        const PlayerProfile(
+          id: 'p0',
+          name: 'Outsider',
+          avatarIndex: 0,
+          score: 0,
+        ),
+        const PlayerProfile(
+          id: 'p1',
+          name: 'Robin Hood',
+          avatarIndex: 1,
+          score: 0,
+        ),
+        const PlayerProfile(
+          id: 'p2',
+          name: 'Leader',
+          avatarIndex: 2,
+          score: 16,
+        ),
+      ];
+
+      final outcome = engine.resolveRound(
+        players: testPlayers,
+        outsiderIds: const ['p0'],
+        topic: 'Algeria',
+        topicPool: pack.topics,
+        assignedPowerCards: const {'p1': 'robin_hood'},
+        votes: const {
+          'p0': ['p1'],
+          'p1': ['p0'],
+          'p2': ['p0'],
+        },
+      );
+
+      // 16 / 4 = 4 points stolen
+      // p1 score delta = 1 (vote) + 4 (stolen) = 5
+      // p2 score delta = 1 (vote) - 4 (stolen) = -3
+      expect(outcome.scoreDeltas['p1'], 5);
+      expect(outcome.scoreDeltas['p2'], -3);
+      expect(outcome.powerEvents.first, contains('ربع نقاط'));
+    });
+
+    test(
+      'Sequential elimination (Among Us mode) with 1 outsider across 2 cycles',
+      () {
+        final engine = GameEngine(random: Random(23));
+        final testPlayers = [
+          const PlayerProfile(
+            id: 'p0',
+            name: 'Outsider',
+            avatarIndex: 0,
+            score: 0,
+          ),
+          const PlayerProfile(
+            id: 'p1',
+            name: 'Innocent 1',
+            avatarIndex: 1,
+            score: 0,
+          ),
+          const PlayerProfile(
+            id: 'p2',
+            name: 'Innocent 2',
+            avatarIndex: 2,
+            score: 0,
+          ),
+          const PlayerProfile(
+            id: 'p3',
+            name: 'Innocent 3',
+            avatarIndex: 3,
+            score: 0,
+          ),
+        ];
+
+        // Cycle 1: p3 (innocent) is falsely accused and eliminated
+        final cycle1 = engine.resolveRound(
+          players: testPlayers,
+          outsiderIds: const ['p0'],
+          topic: 'Egypt',
+          topicPool: pack.topics,
+          accusationLimit: 1,
+          votes: const {
+            'p0': ['p3'],
+            'p1': ['p3'],
+            'p2': ['p3'],
+            'p3': ['p0'],
+          },
+        );
+        expect(cycle1.accusedPlayerIds, ['p3']);
+        expect(cycle1.survivingOutsiderIds, [
+          'p0',
+        ]); // Outsider survived cycle 1
+
+        // Cycle 2: p0 (outsider) is correctly accused and eliminated
+        final cycle2 = engine.resolveRound(
+          players: testPlayers,
+          outsiderIds: const ['p0'],
+          topic: 'Egypt',
+          topicPool: pack.topics,
+          accusationLimit: 1,
+          votes: const {
+            'p0': ['p1'],
+            'p1': ['p0'],
+            'p2': ['p0'],
+          },
+        );
+        expect(cycle2.accusedPlayerIds, ['p0']);
+        expect(cycle2.survivingOutsiderIds, isEmpty); // Outsider caught!
+
+        final merged = engine.mergeVotingOutcomes(
+          previous: cycle1,
+          current: cycle2,
+          survivingOutsiderIds: const [],
+          players: testPlayers,
+        );
+
+        expect(merged.outsiderCaught, isTrue);
+        expect(merged.accusedPlayerIds, containsAll(['p3', 'p0']));
+      },
+    );
+
+    test(
+      'Sequential elimination (Among Us mode) with 2 outsiders across 3 cycles',
+      () {
+        final engine = GameEngine(random: Random(24));
+        final testPlayers = [
+          const PlayerProfile(
+            id: 'p0',
+            name: 'Outsider 1',
+            avatarIndex: 0,
+            score: 0,
+          ),
+          const PlayerProfile(
+            id: 'p1',
+            name: 'Outsider 2',
+            avatarIndex: 1,
+            score: 0,
+          ),
+          const PlayerProfile(
+            id: 'p2',
+            name: 'Innocent 1',
+            avatarIndex: 2,
+            score: 0,
+          ),
+          const PlayerProfile(
+            id: 'p3',
+            name: 'Innocent 2',
+            avatarIndex: 3,
+            score: 0,
+          ),
+          const PlayerProfile(
+            id: 'p4',
+            name: 'Innocent 3',
+            avatarIndex: 4,
+            score: 0,
+          ),
+        ];
+
+        // Cycle 1: p4 (innocent) is eliminated
+        final cycle1 = engine.resolveRound(
+          players: testPlayers,
+          outsiderIds: const ['p0', 'p1'],
+          topic: 'Algeria',
+          topicPool: pack.topics,
+          accusationLimit: 1,
+          votes: const {
+            'p0': ['p4'],
+            'p1': ['p4'],
+            'p2': ['p4'],
+            'p3': ['p4'],
+            'p4': ['p0'],
+          },
+        );
+        expect(cycle1.accusedPlayerIds, ['p4']);
+        expect(cycle1.survivingOutsiderIds, ['p0', 'p1']);
+
+        // Cycle 2: p0 (outsider 1) is eliminated
+        final cycle2 = engine.resolveRound(
+          players: testPlayers,
+          outsiderIds: const ['p0', 'p1'],
+          topic: 'Algeria',
+          topicPool: pack.topics,
+          accusationLimit: 1,
+          votes: const {
+            'p0': ['p2'],
+            'p1': ['p0'],
+            'p2': ['p0'],
+            'p3': ['p0'],
+          },
+        );
+        expect(cycle2.accusedPlayerIds, ['p0']);
+        expect(cycle2.survivingOutsiderIds, ['p1']);
+
+        final merged1and2 = engine.mergeVotingOutcomes(
+          previous: cycle1,
+          current: cycle2,
+          survivingOutsiderIds: ['p1'],
+          players: testPlayers,
+        );
+        expect(merged1and2.survivingOutsiderIds, ['p1']);
+
+        // Cycle 3: p1 (outsider 2) is eliminated (p0 was already caught in cycle 2)
+        final cycle3 = engine.resolveRound(
+          players: testPlayers,
+          outsiderIds: const ['p1'],
+          topic: 'Algeria',
+          topicPool: pack.topics,
+          accusationLimit: 1,
+          votes: const {
+            'p1': ['p2'],
+            'p2': ['p1'],
+            'p3': ['p1'],
+          },
+        );
+        expect(cycle3.accusedPlayerIds, ['p1']);
+        expect(cycle3.survivingOutsiderIds, isEmpty);
+
+        final mergedFinal = engine.mergeVotingOutcomes(
+          previous: merged1and2,
+          current: cycle3,
+          survivingOutsiderIds: const [],
+          players: testPlayers,
+        );
+
+        expect(mergedFinal.outsiderCaught, isTrue);
+        expect(mergedFinal.accusedPlayerIds, containsAll(['p4', 'p0', 'p1']));
+      },
+    );
+
+    test('score ledger always reconciles with every final score delta', () {
+      final engine = GameEngine(random: Random(91));
+      final players = [
+        const PlayerProfile(
+          id: 'p0',
+          name: 'Outsider',
+          avatarIndex: 0,
+          score: 2,
+        ),
+        const PlayerProfile(
+          id: 'p1',
+          name: 'Drainer',
+          avatarIndex: 1,
+          score: 5,
+        ),
+        const PlayerProfile(id: 'p2', name: 'Victim', avatarIndex: 2, score: 9),
+      ];
+      final voting = engine.resolveRound(
+        players: players,
+        outsiderIds: const ['p0'],
+        topic: 'Algeria',
+        topicPool: pack.topics,
+        assignedPowerCards: const {'p1': 'tactical_drain:p2'},
+        votes: const {
+          'p0': ['p1'],
+          'p1': ['p0'],
+          'p2': ['p1'],
+        },
+      );
+      final outcome = engine.finalizeOutsiderGuess(
+        outcome: voting,
+        outsiderId: 'p0',
+        guessedTopic: 'Algeria',
+        players: players,
+      );
+
+      for (final player in players) {
+        final entries = outcome.scoreLedger[player.id]!;
+        expect(
+          entries.fold<int>(0, (sum, entry) => sum + entry.delta),
+          outcome.scoreDeltas[player.id],
+        );
+        expect(entries.first.balanceBefore, player.score);
+        expect(
+          entries.last.balanceAfter,
+          player.score + (outcome.scoreDeltas[player.id] ?? 0),
+        );
+      }
+    });
+
+    test('Diplomatic Immunity also blocks Karma wrong-vote transfer', () {
+      final engine = GameEngine(random: Random(92));
+      final players = [
+        const PlayerProfile(
+          id: 'p0',
+          name: 'Outsider',
+          avatarIndex: 0,
+          score: 0,
+        ),
+        const PlayerProfile(
+          id: 'p1',
+          name: 'Diplomat',
+          avatarIndex: 1,
+          score: 4,
+        ),
+        const PlayerProfile(id: 'p2', name: 'Karma', avatarIndex: 2, score: 4),
+      ];
+      final outcome = engine.resolveRound(
+        players: players,
+        outsiderIds: const ['p0'],
+        topic: 'Algeria',
+        topicPool: pack.topics,
+        assignedPowerCards: const {
+          'p1': 'diplomatic_immunity',
+          'p2': 'karma_backfire',
+        },
+        votes: const {
+          'p0': ['p1'],
+          'p1': ['p2'],
+          'p2': ['p0'],
+        },
+      );
+
+      expect(outcome.scoreDeltas['p1'], 0);
+      expect(outcome.scoreDeltas['p2'], 1);
     });
   });
 }

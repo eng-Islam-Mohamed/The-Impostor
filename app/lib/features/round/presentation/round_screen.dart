@@ -1104,8 +1104,15 @@ class _RoundScreenState extends ConsumerState<RoundScreen> {
     GameSessionState session,
     String outsiderId,
   ) {
+    final isHeadhunter =
+        session.currentOutsiderCardId == PowerCardCatalog.outsiderHeadhunter;
+    // Hide players with Absolute Immunity from the target selection list.
+    final immuneIds = session.powerCards.entries
+        .where((e) => PowerCardCatalog.parseCardId(e.value) == PowerCardCatalog.absoluteImmunity)
+        .map((e) => e.key)
+        .toSet();
     final candidates = session.players
-        .where((player) => player.id != outsiderId)
+        .where((player) => player.id != outsiderId && !immuneIds.contains(player.id))
         .toList(growable: false);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1119,14 +1126,20 @@ class _RoundScreenState extends ConsumerState<RoundScreen> {
               Row(
                 children: [
                   Icon(
-                    Icons.casino_rounded,
-                    color: Theme.of(context).colorScheme.primary,
+                    isHeadhunter
+                        ? Icons.gps_fixed_rounded
+                        : Icons.casino_rounded,
+                    color: isHeadhunter
+                        ? const Color(0xFFFF5252)
+                        : Theme.of(context).colorScheme.primary,
                     size: 30,
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'رهان الرصيد',
+                      isHeadhunter
+                          ? 'قاطع الرؤوس'
+                          : 'رهان الرصيد',
                       style: Theme.of(context).textTheme.headlineSmall,
                     ),
                   ),
@@ -1134,12 +1147,16 @@ class _RoundScreenState extends ConsumerState<RoundScreen> {
               ),
               const SizedBox(height: 10),
               Text(
-                'اختر لاعباً قبل بدء الوقت. ستخمن بعدها من جميع سوالف الفئة.',
+                isHeadhunter
+                    ? 'اختر الضحية لاصطياد كامل رصيدها وتصفيرها! ستخمن بعدها السالفة من جميع الخيارات.'
+                    : 'اختر لاعباً قبل بدء الوقت. ستخمن بعدها من جميع سوالف الفئة.',
                 style: Theme.of(context).textTheme.bodyLarge,
               ),
               const SizedBox(height: 8),
               Text(
-                'الصحيح: تكسب نصف رصيده ويُخصم منه. الخاطئ: تخسر الرهان ويحصل هو على +2.',
+                isHeadhunter
+                    ? 'الصحيح (محاولة 1): تسحب كامل رصيد الضحية ويصبح رصيدها 0! الخاطئ: تخسر 4 نقاط وتكسب الضحية +2.'
+                    : 'الصحيح: تكسب نصف رصيده ويُخصم منه. الخاطئ: تخسر الرهان ويحصل هو على +2.',
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
             ],
@@ -1182,15 +1199,23 @@ class _RoundScreenState extends ConsumerState<RoundScreen> {
     GameSessionState session,
     String playerId,
   ) async {
+    final isHeadhunter =
+        session.currentOutsiderCardId == PowerCardCatalog.outsiderHeadhunter;
     final player = session.players.firstWhere((item) => item.id == playerId);
     final stake = ((player.score.abs() + 1) ~/ 2).clamp(1, 1 << 30);
     final confirmed =
         await showDialog<bool>(
           context: context,
           builder: (dialogContext) => AlertDialog(
-            title: const Text('تأكيد رهان الرصيد'),
+            title: Text(
+              isHeadhunter
+                  ? '🎯 تأكيد ضحية قاطع الرؤوس'
+                  : 'تأكيد رهان الرصيد',
+            ),
             content: Text(
-              'هل تختار ${player.name}؟ قيمة الرهان $stake نقطة، وبعد التأكيد يبدأ وقت التخمين.',
+              isHeadhunter
+                  ? 'هل تختار ${player.name} كضحية؟ إذا خمنت السالفة من المحاولة الأولى ستسحب كامل رصيده (${player.score} نقطة) وتصفره إلى 0! والفشل يخصم منك 4 نقاط.'
+                  : 'هل تختار ${player.name}؟ قيمة الرهان $stake نقطة، وبعد التأكيد يبدأ وقت التخمين.',
             ),
             actions: [
               TextButton(
@@ -1304,6 +1329,12 @@ class _RoundScreenState extends ConsumerState<RoundScreen> {
       final victim = session.players.firstWhereOrNull((p) => p.id == targetId);
       final victimName = victim?.name ?? 'لاعب مستهدف';
       return '⚡ ${card.label}\n${card.description}\nالهدف: $victimName';
+    }
+    if (baseId == PowerCardCatalog.guillotine) {
+      return '💣 ${card.label}\n${card.description}';
+    }
+    if (baseId == PowerCardCatalog.outsiderHeadhunter) {
+      return '🎯 ${card.label}\n${card.description}';
     }
     if (baseId == PowerCardCatalog.tacticalAlliance && targetId != null) {
       final ally = session.players.firstWhereOrNull((p) => p.id == targetId);

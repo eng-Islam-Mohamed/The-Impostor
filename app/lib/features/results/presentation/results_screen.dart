@@ -88,6 +88,17 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
       'لم يتم',
       'السالفة كانت',
       'لوحة النقاط',
+      'من',
+      'إلى',
+      'الرصيد قبل الجولة',
+      'تغيير الجولة',
+      'الرصيد الجديد',
+      'نتيجة التصويت الصحيحة',
+      'نتيجة التصويت الخاطئة',
+      'نتيجة التصويت',
+      'تأثير المهارات',
+      'نتيجة تخمين برا السالفة الصحيح',
+      'نتيجة تخمين برا السالفة الخاطئ',
     ]);
     _warmResultTranslations(
       packId: session.selectedPackId,
@@ -185,13 +196,21 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
                       : localizeTopic(rawGuess);
                   final isCorrect =
                       outcome.outsiderGuessResults[outsider.id] ?? false;
+                  final guessDelta =
+                      outcome.scoreLedger[outsider.id]
+                          ?.where(
+                            (entry) =>
+                                entry.label.contains('تخمين برا السالفة'),
+                          )
+                          .fold<int>(0, (sum, entry) => sum + entry.delta) ??
+                      (isCorrect ? 1 : -1);
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 12),
                     child: Row(
                       children: [
                         Expanded(child: Text('${outsider.name}: $guess')),
                         Text(
-                          isCorrect ? '+1' : '-1',
+                          _formatDelta(guessDelta),
                           style: Theme.of(context).textTheme.titleMedium
                               ?.copyWith(
                                 color: isCorrect
@@ -281,37 +300,79 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
                 const SizedBox(height: 14),
-                ...session.players.map(
-                  (player) => Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: Row(
+                ...session.players.map((player) {
+                  final delta = outcome.scoreDeltas[player.id] ?? 0;
+                  final ledger = outcome.scoreLedger[player.id] ?? const [];
+                  final startingScore = player.score - delta;
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 10),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context)
+                          .colorScheme
+                          .surfaceContainerHighest
+                          .withValues(alpha: 0.38),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.outlineVariant.withValues(alpha: 0.55),
+                      ),
+                    ),
+                    child: ExpansionTile(
+                      shape: const Border(),
+                      collapsedShape: const Border(),
+                      leading: PlayerAvatar(
+                        index: player.avatarIndex,
+                        label: '${player.avatarIndex + 1}',
+                        radius: 18,
+                      ),
+                      title: Text(player.name),
+                      subtitle: Text(
+                        '${localizeUiPhrase(ref, 'من')} $startingScore '
+                        '${localizeUiPhrase(ref, 'إلى')} ${player.score}',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                      trailing: Text(
+                        _formatDelta(delta),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(
+                              color: delta >= 0
+                                  ? Theme.of(context).colorScheme.primary
+                                  : Theme.of(context).colorScheme.error,
+                              fontWeight: FontWeight.w800,
+                            ),
+                      ),
+                      childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
                       children: [
-                        PlayerAvatar(
-                          index: player.avatarIndex,
-                          label: '${player.avatarIndex + 1}',
-                          radius: 18,
+                        const Divider(height: 20),
+                        _ScoreLine(
+                          label: localizeUiPhrase(ref, 'الرصيد قبل الجولة'),
+                          value: '$startingScore',
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(child: Text(player.name)),
-                        Text(
-                          _formatDelta(outcome.scoreDeltas[player.id] ?? 0),
-                          style: Theme.of(context).textTheme.titleMedium
-                              ?.copyWith(
-                                color:
-                                    (outcome.scoreDeltas[player.id] ?? 0) >= 0
-                                    ? Theme.of(context).colorScheme.primary
-                                    : Theme.of(context).colorScheme.error,
-                              ),
+                        ...ledger.map(
+                          (entry) => _ScoreLine(
+                            label: localizeUiPhrase(ref, entry.label),
+                            value: _formatDelta(entry.delta),
+                            valueColor: entry.delta >= 0
+                                ? Theme.of(context).colorScheme.primary
+                                : Theme.of(context).colorScheme.error,
+                          ),
                         ),
-                        const SizedBox(width: 14),
-                        Text(
-                          '${player.score}',
-                          style: Theme.of(context).textTheme.titleMedium,
+                        const Divider(height: 20),
+                        _ScoreLine(
+                          label: localizeUiPhrase(ref, 'تغيير الجولة'),
+                          value: _formatDelta(delta),
+                          emphasize: true,
+                        ),
+                        _ScoreLine(
+                          label: localizeUiPhrase(ref, 'الرصيد الجديد'),
+                          value: '${player.score}',
+                          emphasize: true,
                         ),
                       ],
                     ),
-                  ),
-                ),
+                  );
+                }),
               ],
             ),
           ),
@@ -373,6 +434,42 @@ class _ResultsScreenState extends ConsumerState<ResultsScreen> {
     Future<void>.microtask(
       () =>
           topicLocalizer.ensureTopicsTranslated(packId: packId, topics: topics),
+    );
+  }
+}
+
+class _ScoreLine extends StatelessWidget {
+  const _ScoreLine({
+    required this.label,
+    required this.value,
+    this.valueColor,
+    this.emphasize = false,
+  });
+
+  final String label;
+  final String value;
+  final Color? valueColor;
+  final bool emphasize;
+
+  @override
+  Widget build(BuildContext context) {
+    final style = emphasize
+        ? Theme.of(context).textTheme.titleSmall
+        : Theme.of(context).textTheme.bodyMedium;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 5),
+      child: Row(
+        children: [
+          Expanded(child: Text(label, style: style)),
+          Text(
+            value,
+            style: style?.copyWith(
+              color: valueColor,
+              fontWeight: emphasize ? FontWeight.w800 : FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

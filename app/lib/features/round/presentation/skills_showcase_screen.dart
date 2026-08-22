@@ -97,6 +97,64 @@ class SkillsShowcaseScreen extends ConsumerWidget {
           );
           return const RoundScreen(initialRevealed: true);
 
+        case 'grand-inversion':
+          _setupReveal(
+            ref: ref,
+            cardPayload: PowerCardCatalog.grandInversion,
+            isOutsider: false,
+            topic: 'طيبة القديمة',
+          );
+          return const RoundScreen(initialRevealed: true);
+
+        case 'guillotine':
+          _setupReveal(
+            ref: ref,
+            cardPayload: PowerCardCatalog.guillotine,
+            isOutsider: false,
+            topic: 'بابل',
+          );
+          return const RoundScreen(initialRevealed: true);
+
+        case 'all-in':
+          _setupReveal(
+            ref: ref,
+            cardPayload: PowerCardCatalog.allIn,
+            isOutsider: false,
+            topic: 'الأندلس',
+          );
+          return const RoundScreen(initialRevealed: true);
+
+        case 'equalizer':
+          _setupReveal(
+            ref: ref,
+            cardPayload: PowerCardCatalog.equalizer,
+            isOutsider: false,
+            topic: 'غرناطة',
+          );
+          return const RoundScreen(initialRevealed: true);
+
+        case 'outsider-coup':
+          _setupReveal(
+            ref: ref,
+            cardPayload: PowerCardCatalog.outsiderCoup,
+            isOutsider: true,
+            topic: 'قرطاج',
+          );
+          return const RoundScreen(initialRevealed: true);
+
+        case 'outsider-headhunter':
+          _setupReveal(
+            ref: ref,
+            cardPayload: PowerCardCatalog.outsiderHeadhunter,
+            isOutsider: true,
+            topic: 'القيروان',
+          );
+          return const RoundScreen(initialRevealed: true);
+
+        case 'headhunter-target':
+          _setupHeadhunterTarget(ref: ref);
+          return const RoundScreen();
+
         case 'double-vote':
           _setupReveal(
             ref: ref,
@@ -130,6 +188,101 @@ class SkillsShowcaseScreen extends ConsumerWidget {
         case 'scoreboard':
           _setupResultsWithAllNewEvents(ref: ref);
           return const ResultsScreen(initialScrollToScoreboard: true);
+
+        case 'two-outsiders-drain-success':
+          _setupTwoOutsidersDrain(ref: ref, isSuccess: true);
+          return const ResultsScreen(initialScrollToScoreboard: true);
+
+        case 'two-outsiders-drain-failure':
+          _setupTwoOutsidersDrain(ref: ref, isSuccess: false);
+          return const ResultsScreen(initialScrollToScoreboard: true);
+
+        case 'absolute-immunity':
+          _setupReveal(
+            ref: ref,
+            cardPayload: PowerCardCatalog.absoluteImmunity,
+            isOutsider: false,
+            topic: 'الكعبة المشرفة',
+          );
+          return const RoundScreen(initialRevealed: true);
+
+        case 'among-us-1-outsider':
+          _setupAmongUs1Outsider(ref: ref);
+          return const ResultsScreen(initialScrollToScoreboard: true);
+
+        case 'among-us-2-outsiders':
+          _setupAmongUs2Outsiders(ref: ref);
+          return const ResultsScreen(initialScrollToScoreboard: true);
+
+        case 'immunity-drain-blocked':
+          _setupImmunityDrainBlocked(ref: ref);
+          return const ResultsScreen(initialScrollToScoreboard: true);
+
+        case 'robin-hood-quarter':
+          _setupRobinHoodQuarter(ref: ref);
+          return const ResultsScreen(initialScrollToScoreboard: true);
+
+        case 'jackpot-immunity-excluded':
+          _setupJackpotImmunityExcluded(ref: ref);
+          return const ResultsScreen(initialScrollToScoreboard: true);
+
+        case 'four-choice':
+          _setupReveal(
+            ref: ref,
+            cardPayload: PowerCardCatalog.outsiderFourChoice,
+            isOutsider: true,
+            topic: 'القاهرة',
+          );
+          return const RoundScreen(initialRevealed: true);
+
+        case 'unlimited-time':
+          _setupReveal(
+            ref: ref,
+            cardPayload: PowerCardCatalog.outsiderUnlimitedTime,
+            isOutsider: true,
+            topic: 'دمشق',
+          );
+          return const RoundScreen(initialRevealed: true);
+
+        case 'outsider-high-risk':
+          _setupReveal(
+            ref: ref,
+            cardPayload: PowerCardCatalog.outsiderHighRisk,
+            isOutsider: true,
+            topic: 'بغداد',
+          );
+          return const RoundScreen(initialRevealed: true);
+
+        case 'chaos-wall':
+          _setupReveal(
+            ref: ref,
+            cardPayload: PowerCardCatalog.outsiderChaosWall,
+            isOutsider: true,
+            topic: 'مكة',
+          );
+          return const RoundScreen(initialRevealed: true);
+
+        case 'panic-timer':
+          _setupReveal(
+            ref: ref,
+            cardPayload: PowerCardCatalog.outsiderPanicTimer,
+            isOutsider: true,
+            topic: 'المدينة',
+          );
+          return const RoundScreen(initialRevealed: true);
+
+        case 'point-wager':
+          _setupReveal(
+            ref: ref,
+            cardPayload: '${PowerCardCatalog.outsiderPointWager}:p2',
+            isOutsider: true,
+            topic: 'القدس',
+          );
+          return const RoundScreen(initialRevealed: true);
+
+        case 'equalizer-among-us':
+          _setupEqualizerAmongUs(ref: ref);
+          return const ResultsScreen(initialScrollToScoreboard: true);
       }
     }
 
@@ -144,6 +297,48 @@ class SkillsShowcaseScreen extends ConsumerWidget {
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: 16),
+          _buildActionCard(
+            context: context,
+            title: '🔄 مهارة الانقلاب العظيم (Grand Inversion)',
+            subtitle: 'كشف كرت تبادل الرصيد مع المتصدر واعتلاء القمة',
+            onTap: () => context.push('/skills-showcase/grand-inversion'),
+          ),
+          const SizedBox(height: 12),
+          _buildActionCard(
+            context: context,
+            title: '💣 مهارة المقصلة (The Guillotine)',
+            subtitle: 'كشف كرت تصفير رصيد المتصدر وسحب نصف نقاطه',
+            onTap: () => context.push('/skills-showcase/guillotine'),
+          ),
+          const SizedBox(height: 12),
+          _buildActionCard(
+            context: context,
+            title: '🎲 مهارة الكل أو اللاشيء (All-In Gamble)',
+            subtitle: 'كشف كرت مضاعفة النقاط 3 أضعاف أو الإفلاس التام',
+            onTap: () => context.push('/skills-showcase/all-in'),
+          ),
+          const SizedBox(height: 12),
+          _buildActionCard(
+            context: context,
+            title: '⚖️ مهارة الميزان العادل (The Equalizer)',
+            subtitle: 'كشف كرت جمع ثروات جميع اللاعبين وتوزيعها بالتساوي',
+            onTap: () => context.push('/skills-showcase/equalizer'),
+          ),
+          const SizedBox(height: 12),
+          _buildActionCard(
+            context: context,
+            title: '👑 مهارة انقلاب برا السالفة (Outsider Coup)',
+            subtitle: 'كشف كرت برا السالفة لسرقة عرش المتصدر وتصفيره',
+            onTap: () => context.push('/skills-showcase/outsider-coup'),
+          ),
+          const SizedBox(height: 12),
+          _buildActionCard(
+            context: context,
+            title: '🎯 مهارة صائد الرؤوس (Headhunter)',
+            subtitle: 'كشف كرت برا السالفة لاصطياد كامل رصيد ضحية بريئة',
+            onTap: () => context.push('/skills-showcase/outsider-headhunter'),
+          ),
+          const SizedBox(height: 12),
           _buildActionCard(
             context: context,
             title: '🤝 مهارة التحالف التكتيكي (Tactical Alliance)',
@@ -590,6 +785,385 @@ class SkillsShowcaseScreen extends ConsumerWidget {
         'p1': '${PowerCardCatalog.tacticalAlliance}:p2',
         'p3': PowerCardCatalog.highStakes,
         'p4': PowerCardCatalog.robinHood,
+      },
+      phase: RoundPhase.results,
+      outcome: outcome,
+    );
+  }
+
+  static void _setupHeadhunterTarget({required WidgetRef ref}) {
+    final notifier = ref.read(gameSessionProvider.notifier);
+    final p1 = const PlayerProfile(
+      id: 'p1',
+      name: 'سالم',
+      avatarIndex: 0,
+      score: 15,
+    );
+    final p2 = const PlayerProfile(
+      id: 'p2',
+      name: 'نورة',
+      avatarIndex: 1,
+      score: 8,
+    );
+    final p3 = const PlayerProfile(
+      id: 'p3',
+      name: 'خالد (برا السالفة)',
+      avatarIndex: 2,
+      score: 0,
+    );
+    final players = [p1, p2, p3];
+
+    final outcome = RoundOutcome(
+      outsiderIds: ['p3'],
+      survivingOutsiderIds: const [],
+      accusedPlayerIds: ['p3'],
+      topic: 'الجزائر',
+      voteCounts: {'p3': 2},
+      voteScoreDeltas: {'p1': 1, 'p2': 1, 'p3': 0},
+      scoreDeltas: {'p1': 1, 'p2': 1, 'p3': 0},
+      outsiderGuessOptions: const [
+        'الجزائر',
+        'مصر',
+        'المغرب',
+      ],
+      outsiderCaught: true,
+      isTie: false,
+      recapLine: 'تم كشف برا السالفة في التصويت الحاسم.',
+      powerEvents: const [],
+    );
+
+    notifier.setCustomState(
+      players: players,
+      assignments: const [],
+      currentTopic: 'الجزائر',
+      outsiderIds: ['p3'],
+      powerCards: {
+        'p3': PowerCardCatalog.outsiderHeadhunter,
+      },
+      phase: RoundPhase.outsiderGuess,
+      outsiderGuessIndex: 0,
+      outsiderGuessAttempts: 0,
+      outcome: outcome,
+    );
+  }
+
+  static void _setupTwoOutsidersDrain({
+    required WidgetRef ref,
+    required bool isSuccess,
+  }) {
+    final notifier = ref.read(gameSessionProvider.notifier);
+    final p1 = const PlayerProfile(
+      id: 'p1',
+      name: 'برا السالفة 1',
+      avatarIndex: 0,
+      score: 0,
+    );
+    final p2 = const PlayerProfile(
+      id: 'p2',
+      name: 'برا السالفة 2',
+      avatarIndex: 1,
+      score: 0,
+    );
+    final p3 = const PlayerProfile(
+      id: 'p3',
+      name: 'صاحب السطو',
+      avatarIndex: 2,
+      score: 0,
+    );
+    final p4 = const PlayerProfile(
+      id: 'p4',
+      name: 'الضحية',
+      avatarIndex: 3,
+      score: 12,
+    );
+    final p5 = const PlayerProfile(
+      id: 'p5',
+      name: 'بريء آخر',
+      avatarIndex: 4,
+      score: 0,
+    );
+    final players = [p1, p2, p3, p4, p5];
+
+    final outcome = RoundOutcome(
+      outsiderIds: ['p1', 'p2'],
+      survivingOutsiderIds: const [],
+      accusedPlayerIds: ['p1', 'p2'],
+      topic: 'الجزائر',
+      voteCounts: {'p1': 3, 'p2': 3},
+      voteScoreDeltas: {
+        'p1': 0,
+        'p2': 0,
+        'p3': isSuccess ? 2 : 0,
+        'p4': 2,
+        'p5': 2,
+      },
+      scoreDeltas: {
+        'p1': 0,
+        'p2': 0,
+        'p3': isSuccess ? 14 : 0,
+        'p4': isSuccess ? -10 : 2,
+        'p5': 2,
+      },
+      outsiderGuessOptions: const ['الجزائر', 'مصر', 'المغرب'],
+      outsiderCaught: true,
+      isTie: false,
+      recapLine: isSuccess
+          ? 'تم كشف كلا برا السالفة ونجاح السطو التكتيكي!'
+          : 'تم كشف برا السالفة وحرمان السطو التكتيكي بسبب الخطأ!',
+      powerEvents: [
+        if (isSuccess)
+          '⚡ السطو التكتيكي: صاحب السطو نقل كامل رصيد الضحية (12 نقطة) إلى حسابه.',
+      ],
+      wrongVoterIds: [if (!isSuccess) 'p3'],
+    );
+
+    notifier.setCustomState(
+      players: players,
+      assignments: const [],
+      currentTopic: 'الجزائر',
+      outsiderIds: ['p1', 'p2'],
+      powerCards: {
+        'p3': '${PowerCardCatalog.tacticalDrain}:p4',
+      },
+      phase: RoundPhase.results,
+      outcome: outcome,
+    );
+  }
+
+  static void _setupAmongUs1Outsider({required WidgetRef ref}) {
+    final notifier = ref.read(gameSessionProvider.notifier);
+    final p1 = const PlayerProfile(id: 'p1', name: 'سالم (حصانة)', avatarIndex: 0, score: 10);
+    final p2 = const PlayerProfile(id: 'p2', name: 'نورة (روبن هود)', avatarIndex: 1, score: 4);
+    final p3 = const PlayerProfile(id: 'p3', name: 'أحمد (مُقصى دورة 1)', avatarIndex: 2, score: 0);
+    final p4 = const PlayerProfile(id: 'p4', name: 'خالد (برا السالفة)', avatarIndex: 3, score: 0);
+    final players = [p1, p2, p3, p4];
+
+    final outcome = RoundOutcome(
+      outsiderIds: ['p4'],
+      survivingOutsiderIds: const [],
+      accusedPlayerIds: ['p3', 'p4'],
+      topic: 'الأهرامات',
+      voteCounts: {'p3': 3, 'p4': 2},
+      voteScoreDeltas: {'p1': 0, 'p2': 1, 'p3': -1, 'p4': 0},
+      scoreDeltas: {'p1': 0, 'p2': 3, 'p3': -1, 'p4': 0},
+      outsiderGuessOptions: const ['الأهرامات', 'أبو الهول', 'الكرنك'],
+      outsiderCaught: true,
+      isTie: false,
+      recapLine: 'وضع أمونغ إس (1 برا السالفة): تم إقصاء أحمد في الدورة 1، ثم كشف برا السالفة خالد في الدورة 2!',
+      powerEvents: const [
+        '🏹 روبن هود: نورة أخذت ربع نقاط سالم (2 نقطة).',
+      ],
+      wrongVoterIds: const ['p1', 'p2', 'p4'],
+    );
+
+    notifier.setCustomState(
+      players: players,
+      assignments: const [],
+      currentTopic: 'الأهرامات',
+      outsiderIds: ['p4'],
+      powerCards: {
+        'p1': PowerCardCatalog.absoluteImmunity,
+        'p2': PowerCardCatalog.robinHood,
+      },
+      phase: RoundPhase.results,
+      outcome: outcome,
+    );
+  }
+
+  static void _setupAmongUs2Outsiders({required WidgetRef ref}) {
+    final notifier = ref.read(gameSessionProvider.notifier);
+    final p1 = const PlayerProfile(id: 'p1', name: 'برا السالفة 1', avatarIndex: 0, score: 0);
+    final p2 = const PlayerProfile(id: 'p2', name: 'برا السالفة 2', avatarIndex: 1, score: 0);
+    final p3 = const PlayerProfile(id: 'p3', name: 'صاحب السطو', avatarIndex: 2, score: 0);
+    final p4 = const PlayerProfile(id: 'p4', name: 'الضحية (حصانة)', avatarIndex: 3, score: 15);
+    final p5 = const PlayerProfile(id: 'p5', name: 'بريء (مُقصى 1)', avatarIndex: 4, score: 0);
+    final players = [p1, p2, p3, p4, p5];
+
+    final outcome = RoundOutcome(
+      outsiderIds: ['p1', 'p2'],
+      survivingOutsiderIds: const [],
+      accusedPlayerIds: ['p5', 'p1', 'p2'],
+      topic: 'البتراء',
+      voteCounts: {'p5': 4, 'p1': 3, 'p2': 2},
+      voteScoreDeltas: {'p1': 0, 'p2': 0, 'p3': 1, 'p4': 1, 'p5': -1},
+      scoreDeltas: {'p1': 0, 'p2': 0, 'p3': 1, 'p4': 1, 'p5': -1},
+      outsiderGuessOptions: const ['البتراء', 'جرش', 'وادي رم'],
+      outsiderCaught: true,
+      isTie: false,
+      recapLine: 'وضع أمونغ إس (2 برا السالفة): تم إقصاء بريء في الدورة 1، ثم كشف كلا برا السالفة في الدورتين 2 و 3!',
+      powerEvents: const [
+        '🛡️ الحصانة: تصدّى الضحية (حصانة) لمحاولة السطو التكتيكي من صاحب السطو بنجاح!',
+      ],
+      wrongVoterIds: const ['p3'],
+    );
+
+    notifier.setCustomState(
+      players: players,
+      assignments: const [],
+      currentTopic: 'البتراء',
+      outsiderIds: ['p1', 'p2'],
+      powerCards: {
+        'p3': '${PowerCardCatalog.tacticalDrain}:p4',
+        'p4': PowerCardCatalog.absoluteImmunity,
+      },
+      phase: RoundPhase.results,
+      outcome: outcome,
+    );
+  }
+
+  static void _setupImmunityDrainBlocked({required WidgetRef ref}) {
+    final notifier = ref.read(gameSessionProvider.notifier);
+    final p1 = const PlayerProfile(id: 'p1', name: 'برا السالفة', avatarIndex: 0, score: 0);
+    final p2 = const PlayerProfile(id: 'p2', name: 'صاحب السطو', avatarIndex: 1, score: 3);
+    final p3 = const PlayerProfile(id: 'p3', name: 'الضحية المحصنة', avatarIndex: 2, score: 18);
+    final players = [p1, p2, p3];
+
+    final outcome = RoundOutcome(
+      outsiderIds: ['p1'],
+      survivingOutsiderIds: const [],
+      accusedPlayerIds: ['p1'],
+      topic: 'الكعبة المشرفة',
+      voteCounts: {'p1': 2},
+      voteScoreDeltas: {'p1': 0, 'p2': 1, 'p3': 1},
+      scoreDeltas: {'p1': 0, 'p2': 1, 'p3': 1},
+      outsiderGuessOptions: const ['الكعبة المشرفة', 'المسجد النبوي', 'المسجد الأقصى'],
+      outsiderCaught: true,
+      isTie: false,
+      recapLine: 'تم كشف برا السالفة وتصدت الحصانة للسطو التكتيكي!',
+      powerEvents: const [
+        '🛡️ الحصانة: تصدّى الضحية المحصنة لمحاولة السطو التكتيكي من صاحب السطو بنجاح!',
+      ],
+    );
+
+    notifier.setCustomState(
+      players: players,
+      assignments: const [],
+      currentTopic: 'الكعبة المشرفة',
+      outsiderIds: ['p1'],
+      powerCards: {
+        'p2': '${PowerCardCatalog.tacticalDrain}:p3',
+        'p3': PowerCardCatalog.absoluteImmunity,
+      },
+      phase: RoundPhase.results,
+      outcome: outcome,
+    );
+  }
+
+  static void _setupRobinHoodQuarter({required WidgetRef ref}) {
+    final notifier = ref.read(gameSessionProvider.notifier);
+    final p1 = const PlayerProfile(id: 'p1', name: 'برا السالفة', avatarIndex: 0, score: 0);
+    final p2 = const PlayerProfile(id: 'p2', name: 'روبن هود', avatarIndex: 1, score: 2);
+    final p3 = const PlayerProfile(id: 'p3', name: 'المتصدر', avatarIndex: 2, score: 16);
+    final players = [p1, p2, p3];
+
+    final outcome = RoundOutcome(
+      outsiderIds: ['p1'],
+      survivingOutsiderIds: const [],
+      accusedPlayerIds: ['p1'],
+      topic: 'عمر المختار',
+      voteCounts: {'p1': 2},
+      voteScoreDeltas: {'p1': 0, 'p2': 1, 'p3': 1},
+      scoreDeltas: {'p1': 0, 'p2': 5, 'p3': -3},
+      outsiderGuessOptions: const ['عمر المختار', 'طارق بن زياد', 'صلاح الدين'],
+      outsiderCaught: true,
+      isTie: false,
+      recapLine: 'تم كشف برا السالفة وسحب روبن هود ربع نقاط المتصدر!',
+      powerEvents: const [
+        '🏹 روبن هود: روبن هود أخذ ربع نقاط المتصدر (4 نقطة).',
+      ],
+    );
+
+    notifier.setCustomState(
+      players: players,
+      assignments: const [],
+      currentTopic: 'عمر المختار',
+      outsiderIds: ['p1'],
+      powerCards: {
+        'p2': PowerCardCatalog.robinHood,
+      },
+      phase: RoundPhase.results,
+      outcome: outcome,
+    );
+  }
+
+  static void _setupJackpotImmunityExcluded({required WidgetRef ref}) {
+    final notifier = ref.read(gameSessionProvider.notifier);
+    final p1 = const PlayerProfile(id: 'p1', name: 'برا السالفة', avatarIndex: 0, score: 0);
+    final p2 = const PlayerProfile(id: 'p2', name: 'صاحب الجاكبوت', avatarIndex: 1, score: 0);
+    final p3 = const PlayerProfile(id: 'p3', name: 'لاعب عادي', avatarIndex: 2, score: 10);
+    final p4 = const PlayerProfile(id: 'p4', name: 'لاعب محصن', avatarIndex: 3, score: 20);
+    final players = [p1, p2, p3, p4];
+
+    final outcome = RoundOutcome(
+      outsiderIds: ['p1'],
+      survivingOutsiderIds: const [],
+      accusedPlayerIds: ['p1'],
+      topic: 'ابن بطوطة',
+      voteCounts: {'p1': 3},
+      voteScoreDeltas: {'p1': 0, 'p2': 1, 'p3': 1, 'p4': 1},
+      scoreDeltas: {'p1': 0, 'p2': 11, 'p3': 1, 'p4': 1},
+      outsiderGuessOptions: const ['ابن بطوطة', 'ابن سينا', 'ابن رشد'],
+      outsiderCaught: true,
+      isTie: false,
+      recapLine: 'تم كشف برا السالفة وحصل صاحب الجاكبوت على نقاط اللاعب العادي فقط!',
+      powerEvents: const [
+        '🎰 الجاكبوت: صاحب الجاكبوت كسب +10 نقطة بعد تصويت كامل وصحيح. (رصيد اللاعبين ذوي الحصانة محذوف)',
+      ],
+    );
+
+    notifier.setCustomState(
+      players: players,
+      assignments: const [],
+      currentTopic: 'ابن بطوطة',
+      outsiderIds: ['p1'],
+      powerCards: {
+        'p2': PowerCardCatalog.jackpot,
+        'p4': PowerCardCatalog.absoluteImmunity,
+      },
+      phase: RoundPhase.results,
+      outcome: outcome,
+    );
+  }
+
+  static void _setupEqualizerAmongUs({required WidgetRef ref}) {
+    final notifier = ref.read(gameSessionProvider.notifier);
+    final p1 = const PlayerProfile(id: 'p1', name: 'سالم (المتصدر)', avatarIndex: 0, score: 7);
+    final p2 = const PlayerProfile(id: 'p2', name: 'نورة (الميزان العادل)', avatarIndex: 1, score: 7);
+    final p3 = const PlayerProfile(id: 'p3', name: 'أحمد (مُقصى دورة 1)', avatarIndex: 2, score: 7);
+    final p4 = const PlayerProfile(id: 'p4', name: 'خالد (برا السالفة)', avatarIndex: 3, score: 7);
+    final players = [p1, p2, p3, p4];
+
+    // Total pot = 20 + 2 + 6 + 0 = 28 -> Target = 7 each!
+    final outcome = RoundOutcome(
+      outsiderIds: ['p4'],
+      survivingOutsiderIds: const [],
+      accusedPlayerIds: ['p3', 'p4'],
+      topic: 'غرناطة',
+      voteCounts: {'p3': 3, 'p4': 2},
+      voteScoreDeltas: {'p1': 0, 'p2': 1, 'p3': -1, 'p4': 0},
+      scoreDeltas: {
+        'p1': -13, // 20 - 13 = 7
+        'p2': 5,   // 2 + 5 = 7
+        'p3': 1,   // 6 + 1 = 7
+        'p4': 7,   // 0 + 7 = 7
+      },
+      outsiderGuessOptions: const ['غرناطة', 'قرطبة', 'إشبيلية'],
+      outsiderCaught: true,
+      isTie: false,
+      recapLine: 'وضع أمونغ إس: نجح الميزان العادل بعد كشف برا السالفة وقسّم 28 نقطة بالتساوي (7 لكل لاعب)!',
+      powerEvents: const [
+        '⚖️ الميزان العادل: نورة أعادت توزيع النقاط بالتساوي (7 نقطة لكل لاعب)!',
+      ],
+      wrongVoterIds: const ['p1', 'p4'],
+    );
+
+    notifier.setCustomState(
+      players: players,
+      assignments: const [],
+      currentTopic: 'غرناطة',
+      outsiderIds: ['p4'],
+      powerCards: {
+        'p2': PowerCardCatalog.equalizer,
       },
       phase: RoundPhase.results,
       outcome: outcome,
